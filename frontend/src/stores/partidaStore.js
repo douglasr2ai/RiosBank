@@ -44,7 +44,16 @@ export const usePartidaStore = defineStore('partida', () => {
   }
 
   function setAprovacaoPendente(dados) {
-    aprovacaoPendente.value = dados
+    aprovacaoPendente.value = { ...dados, votos: {} }
+  }
+
+  function registrarVoto(jogadorId, voto) {
+    if (aprovacaoPendente.value) {
+      aprovacaoPendente.value = {
+        ...aprovacaoPendente.value,
+        votos: { ...aprovacaoPendente.value.votos, [jogadorId]: voto },
+      }
+    }
   }
 
   function clearAprovacao() {
@@ -94,7 +103,7 @@ export const usePartidaStore = defineStore('partida', () => {
   return {
     sala, jogadores, posses, transacoes, aprovacaoPendente, leilaoAtivo,
     jogadoresAtivos, possesDe, propriedadesDisponiveis,
-    setSala, addTransacao, updateJogador, setAprovacaoPendente, clearAprovacao,
+    setSala, addTransacao, updateJogador, setAprovacaoPendente, registrarVoto, clearAprovacao,
     setLeilaoAtivo, clearLeilao, updatePosse,
     carregarSala, carregarPropriedades, carregarTransacoes, clear,
   }

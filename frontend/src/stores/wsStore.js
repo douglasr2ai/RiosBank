@@ -94,9 +94,12 @@ export const useWsStore = defineStore('ws', () => {
         partida.setAprovacaoPendente(msg.dados)
         break
 
+      case 'transacao_voto_registrado':
+        partida.registrarVoto(msg.dados.jogador_id, msg.dados.voto)
+        break
+
       case 'transacao_aprovada':
       case 'transacao_reprovada':
-      case 'transacao_voto_registrado':
       case 'transacao_estornada': {
         partida.clearAprovacao()
         if (salaId) {
@@ -110,6 +113,10 @@ export const useWsStore = defineStore('ws', () => {
         }
         break
       }
+
+      case 'jogador_falido':
+        partida.updateJogador(msg.dados.jogador_id, { status: 'falido' })
+        break
 
       case 'leilao_iniciado':
         partida.setLeilaoAtivo(msg.dados)

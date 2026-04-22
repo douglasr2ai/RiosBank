@@ -76,11 +76,12 @@ const dados = computed(() => partida.aprovacaoPendente)
 const timer = ref(DURACAO)
 let interval = null
 
-const votantes = computed(() =>
-  partida.jogadoresAtivos
+const votantes = computed(() => {
+  const votos = dados.value?.votos || {}
+  return partida.jogadoresAtivos
     .filter(j => j.id !== dados.value?.origem_id && j.id !== dados.value?.destino_id)
-    .map(j => ({ ...j, voto: null }))
-)
+    .map(j => ({ ...j, voto: votos[j.id] ?? null }))
+})
 
 const podeVotar = computed(() => {
   if (!dados.value) return false

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -17,8 +18,9 @@ TIPOS_VALIDOS = {
 }
 
 
-def _resolve_transacao(transacao: Transacao, db: Session):
-    """Aplica os efeitos financeiros de uma transação aprovada."""
+def _resolve_transacao(transacao: Transacao, db: Session) -> list:
+    """Aplica os efeitos financeiros de uma transação aprovada. Retorna IDs de jogadores que faliram."""
+    falidos = []
     if transacao.tipo in ("transferencia", "aluguel", "compra_propriedade",
                           "leilao", "pagamento_banco", "compra_casa",
                           "venda_casa", "hipoteca", "recuperar_hipoteca", "troca"):
@@ -26,10 +28,10 @@ def _resolve_transacao(transacao: Transacao, db: Session):
             origem = db.query(Jogador).filter_by(id=transacao.origem_id).first()
             if origem:
                 origem.saldo -= transacao.valor
-                # Checar falência
                 if origem.saldo < 0:
                     origem.saldo = 0
                     origem.status = "falido"
+                    falidos.append(origem.id)
 
         if transacao.destino_id:
             destino = db.query(Jogador).filter_by(id=transacao.destino_id).first()
@@ -91,6 +93,8 @@ def _resolve_transacao(transacao: Transacao, db: Session):
                 elif posse.num_casas > 0:
                     posse.num_casas -= 1
                     sala.casas_disponiveis += 1
+
+    return falidos
 
 
 def _check_resultado_votos(transacao: Transacao, db: Session) -> Optional[str]:
@@ -175,8 +179,12 @@ async def criar_transacao(body: TransacaoCreate, db: Session = Depends(get_db)):
     if not votantes:
         transacao.status = "aprovada"
         transacao.resolvida_em = datetime.now(timezone.utc)
-        _resolve_transacao(transacao, db)
+        falidos = _resolve_transacao(transacao, db)
         db.commit()
+        for falido_id in falidos:
+            await manager.broadcast(body.sala_id, {
+                "tipo": "jogador_falido", "dados": {"jogador_id": falido_id},
+            })
         await manager.broadcast(body.sala_id, {
             "tipo": "transacao_aprovada",
             "dados": {"transacao_id": transacao.id},
@@ -225,18 +233,28 @@ async def votar(transacao_id: str, body: VotoCreate, db: Session = Depends(get_d
     db.flush()
 
     resultado = _check_resultado_votos(transacao, db)
+    falidos = []
     if resultado:
         transacao.status = resultado
         transacao.resolvida_em = datetime.now(timezone.utc)
         if resultado == "aprovada":
-            _resolve_transacao(transacao, db)
+            falidos = _resolve_transacao(transacao, db)
 
     db.commit()
 
-    await manager.broadcast(transacao.sala_id, {
-        "tipo": f"transacao_{resultado or 'voto_registrado'}",
-        "dados": {"transacao_id": transacao_id, "status": transacao.status},
-    })
+    tipo_evento = f"transacao_{resultado}" if resultado else "transacao_voto_registrado"
+    dados_evento: dict = {"transacao_id": transacao_id, "status": transacao.status}
+    if not resultado:
+        dados_evento["jogador_id"] = jogador.id
+        dados_evento["voto"] = body.voto
+
+    await manager.broadcast(transacao.sala_id, {"tipo": tipo_evento, "dados": dados_evento})
+
+    for falido_id in falidos:
+        await manager.broadcast(transacao.sala_id, {
+            "tipo": "jogador_falido", "dados": {"jogador_id": falido_id},
+        })
+
     return {"status": transacao.status}
 
 
@@ -247,7 +265,6 @@ async def resolver_por_timeout(transacao_id: str, session_token: str, db: Sessio
     if not transacao or transacao.status != "pendente":
         return {"status": transacao.status if transacao else "not_found"}
 
-    # Verificar autoria (qualquer jogador ativo pode resolver o timeout)
     jogador = db.query(Jogador).filter_by(
         session_token=session_token, sala_id=transacao.sala_id
     ).first()
@@ -255,14 +272,28 @@ async def resolver_por_timeout(transacao_id: str, session_token: str, db: Sessio
         raise HTTPException(status_code=403, detail="Sessão inválida")
 
     resultado = _check_resultado_votos(transacao, db)
-    # Se ainda indeciso no timeout → aprovada (sem voto = aprovação automática)
     resultado = resultado or "aprovada"
+    agora = datetime.now(timezone.utc)
 
-    transacao.status = resultado
-    transacao.resolvida_em = datetime.now(timezone.utc)
+    # UPDATE atômico: apenas o primeiro resolver que chegar executa (evita race condition)
+    updated = db.execute(
+        sql_update(Transacao)
+        .where(Transacao.id == transacao_id, Transacao.status == "pendente")
+        .values(status=resultado, resolvida_em=agora)
+    )
+    if updated.rowcount == 0:
+        db.rollback()
+        return {"status": transacao.status}
+
+    falidos = []
     if resultado == "aprovada":
-        _resolve_transacao(transacao, db)
+        falidos = _resolve_transacao(transacao, db)
     db.commit()
+
+    for falido_id in falidos:
+        await manager.broadcast(transacao.sala_id, {
+            "tipo": "jogador_falido", "dados": {"jogador_id": falido_id},
+        })
 
     await manager.broadcast(transacao.sala_id, {
         "tipo": f"transacao_{resultado}",
@@ -294,6 +325,39 @@ async def estornar(transacao_id: str, session_token: str, db: Session = Depends(
         destino = db.query(Jogador).filter_by(id=transacao.destino_id).first()
         if destino:
             destino.saldo -= transacao.valor
+
+    # Reverter efeito sobre propriedades
+    if transacao.propriedade_id:
+        posse = db.query(PossePropriedade).filter_by(
+            sala_id=transacao.sala_id,
+            propriedade_id=transacao.propriedade_id,
+        ).first()
+        sala_p = db.query(Sala).filter_by(id=transacao.sala_id).first()
+        if posse:
+            if transacao.tipo == "compra_propriedade":
+                posse.jogador_id = None
+            elif transacao.tipo == "hipoteca":
+                posse.hipotecada = False
+            elif transacao.tipo == "recuperar_hipoteca":
+                posse.hipotecada = True
+            elif transacao.tipo == "compra_casa" and sala_p:
+                if posse.tem_hotel:
+                    posse.tem_hotel = False
+                    posse.num_casas = 4
+                    sala_p.hoteis_disponiveis += 1
+                    sala_p.casas_disponiveis -= 4
+                elif posse.num_casas > 0:
+                    posse.num_casas -= 1
+                    sala_p.casas_disponiveis += 1
+            elif transacao.tipo == "venda_casa" and sala_p:
+                if posse.num_casas == 4:
+                    posse.tem_hotel = True
+                    posse.num_casas = 0
+                    sala_p.hoteis_disponiveis -= 1
+                    sala_p.casas_disponiveis += 4
+                else:
+                    posse.num_casas += 1
+                    sala_p.casas_disponiveis -= 1
 
     transacao.status = "estornada"
 

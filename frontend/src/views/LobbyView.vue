@@ -73,7 +73,7 @@
           {{ loading ? 'Iniciando...' : 'Iniciar partida' }}
         </button>
         <p v-else class="aguarda-host text-muted">Aguardando o host iniciar a partida...</p>
-        <button class="btn btn-ghost" style="margin-top: 4px">Sair da sala</button>
+        <button class="btn btn-ghost" style="margin-top: 4px" @click="sair">Sair da sala</button>
       </div>
     </div>
   </div>
@@ -84,12 +84,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { usePartidaStore } from '../stores/partidaStore'
+import { useWsStore } from '../stores/wsStore'
 import { api } from '../stores/api'
 
 const route = useRoute()
 const router = useRouter()
 const jogador = useJogadorStore()
 const partida = usePartidaStore()
+const ws = useWsStore()
 
 const loading = ref(false)
 const copiado = ref(false)
@@ -121,6 +123,16 @@ async function iniciar() {
   } finally {
     loading.value = false
   }
+}
+
+async function sair() {
+  try {
+    await api.post(`/salas/${route.params.salaId}/sair?session_token=${jogador.sessionToken}`)
+  } catch {}
+  jogador.clear()
+  partida.clear()
+  ws.disconnect()
+  router.push({ name: 'entrar' })
 }
 
 onMounted(async () => {

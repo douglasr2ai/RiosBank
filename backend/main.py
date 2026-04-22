@@ -4,7 +4,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from database import engine, get_db, Base
+from database import engine, get_db, Base, SessionLocal
 from models import Jogador, Sala
 from ws_manager import manager
 from seed import seed_propriedades
@@ -98,7 +98,7 @@ async def websocket_endpoint(
         })
 
         # Verificar se o host desconectou e promover substituto
-        db2 = next(get_db())
+        db2 = SessionLocal()
         try:
             sala2 = db2.query(Sala).filter_by(id=sala_id).first()
             if sala2 and sala2.host_jogador_id == jogador.id:

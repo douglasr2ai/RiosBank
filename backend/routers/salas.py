@@ -216,6 +216,39 @@ async def expulsar_jogador(
     return {"ok": True}
 
 
+# ── Sair da sala (auto-saída) ─────────────────────────────────────────────
+
+@router.post("/{sala_id}/sair")
+async def sair_da_sala(sala_id: str, session_token: str, db: Session = Depends(get_db)):
+    sala = db.query(Sala).filter_by(id=sala_id).first()
+    if not sala or sala.status not in ("lobby", "em_andamento"):
+        raise HTTPException(status_code=404, detail="Sala não encontrada")
+
+    jogador = db.query(Jogador).filter_by(session_token=session_token, sala_id=sala_id).first()
+    if not jogador or jogador.status == "expulso":
+        raise HTTPException(status_code=403, detail="Sessão inválida")
+
+    is_host = sala.host_jogador_id == jogador.id
+    if is_host:
+        outros = [j for j in sala.jogadores if j.status == "ativo" and j.id != jogador.id]
+        if outros:
+            novo_host = min(outros, key=lambda j: j.ordem_entrada)
+            sala.host_jogador_id = novo_host.id
+            await manager.broadcast(sala_id, {
+                "tipo": "host_alterado",
+                "dados": {"novo_host_id": novo_host.id, "nome": novo_host.nome},
+            })
+
+    jogador.status = "expulso"
+    db.commit()
+
+    await manager.broadcast(sala_id, {
+        "tipo": "jogador_expulso",
+        "dados": {"jogador_id": jogador.id, "nome": jogador.nome},
+    })
+    return {"ok": True}
+
+
 # ── Encerrar partida (host) ───────────────────────────────────────────────
 
 @router.post("/{sala_id}/encerrar")
