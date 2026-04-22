@@ -176,7 +176,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "laranja", "cor_hex": "#FB8C00",
         "nome": "R. Oscar Freire",
-        "valor_compra": 0, "valor_hipoteca": 150_000,
+        "valor_compra": 300_000, "valor_hipoteca": 150_000,
         "custo_casa": 200_000, "custo_hotel": 200_000,
         "aluguel_sem_casa": 26_000, "aluguel_1_casa": 130_000,
         "aluguel_2_casas": 390_000, "aluguel_3_casas": 900_000,
@@ -185,7 +185,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "laranja", "cor_hex": "#FB8C00",
         "nome": "Av. Ibirapuera",
-        "valor_compra": 0, "valor_hipoteca": 150_000,
+        "valor_compra": 300_000, "valor_hipoteca": 150_000,
         "custo_casa": 200_000, "custo_hotel": 200_000,
         "aluguel_sem_casa": 26_000, "aluguel_1_casa": 130_000,
         "aluguel_2_casas": 390_000, "aluguel_3_casas": 900_000,
@@ -194,7 +194,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "laranja", "cor_hex": "#FB8C00",
         "nome": "Av. Jucelino Kubitschek",
-        "valor_compra": 0, "valor_hipoteca": 160_000,
+        "valor_compra": 320_000, "valor_hipoteca": 160_000,
         "custo_casa": 200_000, "custo_hotel": 200_000,
         "aluguel_sem_casa": 28_000, "aluguel_1_casa": 150_000,
         "aluguel_2_casas": 450_000, "aluguel_3_casas": 1_000_000,
@@ -204,7 +204,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "rosa", "cor_hex": "#AD1457",
         "nome": "Av. Higienópolis",
-        "valor_compra": 0, "valor_hipoteca": 175_000,
+        "valor_compra": 350_000, "valor_hipoteca": 175_000,
         "custo_casa": 200_000, "custo_hotel": 200_000,
         "aluguel_sem_casa": 35_000, "aluguel_1_casa": 175_000,
         "aluguel_2_casas": 500_000, "aluguel_3_casas": 1_100_000,
@@ -213,7 +213,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "rosa", "cor_hex": "#AD1457",
         "nome": "Av. Morumbi",
-        "valor_compra": 0, "valor_hipoteca": 200_000,
+        "valor_compra": 400_000, "valor_hipoteca": 200_000,
         "custo_casa": 200_000, "custo_hotel": 200_000,
         "aluguel_sem_casa": 50_000, "aluguel_1_casa": 200_000,
         "aluguel_2_casas": 600_000, "aluguel_3_casas": 1_400_000,
