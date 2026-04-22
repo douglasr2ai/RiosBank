@@ -1,7 +1,6 @@
 """
 Catálogo de propriedades do Super Banco Imobiliário.
 Todos os valores em centavos (R$1 = 100).
-PENDENTE: valor_compra de cada propriedade — preencher com os valores do tabuleiro.
 """
 from sqlalchemy.orm import Session
 from models import Propriedade
@@ -45,7 +44,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "roxo", "cor_hex": "#9C27B0",
         "nome": "Av. Ipiranga",
-        "valor_compra": 0, "valor_hipoteca": 50_000,
+        "valor_compra": 100_000, "valor_hipoteca": 50_000,
         "custo_casa": 50_000, "custo_hotel": 50_000,
         "aluguel_sem_casa": 6_000, "aluguel_1_casa": 30_000,
         "aluguel_2_casas": 90_000, "aluguel_3_casas": 270_000,
@@ -54,7 +53,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "roxo", "cor_hex": "#9C27B0",
         "nome": "Av. São João",
-        "valor_compra": 0, "valor_hipoteca": 60_000,
+        "valor_compra": 120_000, "valor_hipoteca": 60_000,
         "custo_casa": 50_000, "custo_hotel": 50_000,
         "aluguel_sem_casa": 8_000, "aluguel_1_casa": 40_000,
         "aluguel_2_casas": 100_000, "aluguel_3_casas": 300_000,
