@@ -120,7 +120,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "vermelho", "cor_hex": "#E53935",
         "nome": "Av. do Estado",
-        "valor_compra": 0, "valor_hipoteca": 110_000,
+        "valor_compra": 220_000, "valor_hipoteca": 110_000,
         "custo_casa": 150_000, "custo_hotel": 150_000,
         "aluguel_sem_casa": 18_000, "aluguel_1_casa": 90_000,
         "aluguel_2_casas": 250_000, "aluguel_3_casas": 700_000,
@@ -129,7 +129,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "vermelho", "cor_hex": "#E53935",
         "nome": "Av. do Contorno",
-        "valor_compra": 0, "valor_hipoteca": 110_000,
+        "valor_compra": 220_000, "valor_hipoteca": 110_000,
         "custo_casa": 150_000, "custo_hotel": 150_000,
         "aluguel_sem_casa": 18_000, "aluguel_1_casa": 90_000,
         "aluguel_2_casas": 250_000, "aluguel_3_casas": 700_000,
@@ -138,7 +138,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "vermelho", "cor_hex": "#E53935",
         "nome": "Av. Rio Branco",
-        "valor_compra": 0, "valor_hipoteca": 120_000,
+        "valor_compra": 240_000, "valor_hipoteca": 120_000,
         "custo_casa": 150_000, "custo_hotel": 150_000,
         "aluguel_sem_casa": 20_000, "aluguel_1_casa": 100_000,
         "aluguel_2_casas": 300_000, "aluguel_3_casas": 750_000,
