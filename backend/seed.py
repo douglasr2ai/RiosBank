@@ -148,7 +148,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "amarelo", "cor_hex": "#FDD835",
         "nome": "Av. Presidente Vargas",
-        "valor_compra": 0, "valor_hipoteca": 130_000,
+        "valor_compra": 260_000, "valor_hipoteca": 130_000,
         "custo_casa": 150_000, "custo_hotel": 150_000,
         "aluguel_sem_casa": 22_000, "aluguel_1_casa": 110_000,
         "aluguel_2_casas": 333_000, "aluguel_3_casas": 800_000,
@@ -157,7 +157,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "amarelo", "cor_hex": "#FDD835",
         "nome": "Av. Niemeyer",
-        "valor_compra": 0, "valor_hipoteca": 130_000,
+        "valor_compra": 260_000, "valor_hipoteca": 130_000,
         "custo_casa": 150_000, "custo_hotel": 150_000,
         "aluguel_sem_casa": 22_000, "aluguel_1_casa": 110_000,
         "aluguel_2_casas": 330_000, "aluguel_3_casas": 800_000,
@@ -166,7 +166,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "amarelo", "cor_hex": "#FDD835",
         "nome": "Av. Vieira Souto",
-        "valor_compra": 0, "valor_hipoteca": 140_000,
+        "valor_compra": 280_000, "valor_hipoteca": 140_000,
         "custo_casa": 150_000, "custo_hotel": 150_000,
         "aluguel_sem_casa": 26_000, "aluguel_1_casa": 130_000,
         "aluguel_2_casas": 360_000, "aluguel_3_casas": 850_000,
