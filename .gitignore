@@ -49,3 +49,6 @@ logs/
 .coverage
 htmlcov/
 coverage.xml
+
+# Docs
+docs/
