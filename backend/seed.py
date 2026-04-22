@@ -92,7 +92,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "azul_claro", "cor_hex": "#29B6F6",
         "nome": "R. da Consolação",
-        "valor_compra": 0, "valor_hipoteca": 100_000,
+        "valor_compra": 180_000, "valor_hipoteca": 100_000,
         "custo_casa": 100_000, "custo_hotel": 100_000,
         "aluguel_sem_casa": 14_000, "aluguel_1_casa": 70_000,
         "aluguel_2_casas": 200_000, "aluguel_3_casas": 550_000,
@@ -101,7 +101,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "azul_claro", "cor_hex": "#29B6F6",
         "nome": "Av. Santo Amaro",
-        "valor_compra": 0, "valor_hipoteca": 100_000,
+        "valor_compra": 180_000, "valor_hipoteca": 100_000,
         "custo_casa": 100_000, "custo_hotel": 100_000,
         "aluguel_sem_casa": 14_000, "aluguel_1_casa": 70_000,
         "aluguel_2_casas": 200_000, "aluguel_3_casas": 550_000,
@@ -110,7 +110,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "azul_claro", "cor_hex": "#29B6F6",
         "nome": "Av. Rebouças",
-        "valor_compra": 0, "valor_hipoteca": 100_000,
+        "valor_compra": 200_000, "valor_hipoteca": 100_000,
         "custo_casa": 100_000, "custo_hotel": 100_000,
         "aluguel_sem_casa": 16_000, "aluguel_1_casa": 80_000,
         "aluguel_2_casas": 220_000, "aluguel_3_casas": 600_000,
