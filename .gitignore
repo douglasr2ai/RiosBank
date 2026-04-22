@@ -1,0 +1,51 @@
+# Base de referência local
+backup/
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+build/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Data (gerado em runtime)
+data/
+
+# Node / Vite / Vue
+node_modules/
+frontend/dist/
+dist/
+
+# Variáveis de ambiente
+.env
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Testes / cobertura
+.coverage
+htmlcov/
+coverage.xml
