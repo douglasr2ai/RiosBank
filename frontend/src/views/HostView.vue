@@ -44,11 +44,16 @@
             <p class="jog-nome">{{ j.nome }}</p>
             <p class="jog-saldo mono text-muted">{{ formatMoney(j.saldo) }}</p>
           </div>
-          <button v-if="j.id !== jogador.id" class="expulsar-btn" @click="expulsar(j)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px">
+          <button
+            v-if="j.id !== jogador.id"
+            class="expulsar-btn"
+            :class="{ 'confirming': confirmando?.tipo === 'expulsar' && confirmando?.id === j.id }"
+            @click="clickExpulsar(j)"
+          >
+            <svg v-if="!(confirmando?.tipo === 'expulsar' && confirmando?.id === j.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
-            Expulsar
+            {{ confirmando?.tipo === 'expulsar' && confirmando?.id === j.id ? 'Confirmar?' : 'Expulsar' }}
           </button>
         </div>
       </div>
@@ -62,7 +67,13 @@
             <p class="trans-desc">{{ descricao(t) }}</p>
             <p class="trans-val mono text-muted">{{ formatMoney(t.valor) }}</p>
           </div>
-          <button class="estornar-btn" @click="estornar(t.id)">Estornar</button>
+          <button
+            class="estornar-btn"
+            :class="{ 'confirming': confirmando?.tipo === 'estornar' && confirmando?.id === t.id }"
+            @click="clickEstornar(t.id)"
+          >
+            {{ confirmando?.tipo === 'estornar' && confirmando?.id === t.id ? 'Confirmar?' : 'Estornar' }}
+          </button>
         </div>
       </div>
 
@@ -70,11 +81,16 @@
       <div class="danger-card glass">
         <p class="danger-title">Encerrar partida</p>
         <p class="danger-desc text-muted">O sistema fará a liquidação automática e salvará o ranking final.</p>
-        <button class="btn btn-danger" style="margin-top: 4px" @click="confirmarEncerramento">
+        <button
+          class="btn"
+          :class="confirmando?.tipo === 'encerrar' ? 'btn-danger-confirming' : 'btn-danger'"
+          style="margin-top: 4px"
+          @click="clickEncerrar"
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
           </svg>
-          Encerrar partida
+          {{ confirmando?.tipo === 'encerrar' ? 'Clique para confirmar' : 'Encerrar partida' }}
         </button>
       </div>
     </div>
@@ -88,6 +104,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { usePartidaStore } from '../stores/partidaStore'
+import { useToastStore } from '../stores/toastStore'
 import { api } from '../stores/api'
 import BottomNav from '../components/BottomNav.vue'
 
@@ -95,9 +112,12 @@ const route = useRoute()
 const salaId = computed(() => route.params.salaId)
 const jogador = useJogadorStore()
 const partida = usePartidaStore()
+const toast = useToastStore()
 
 const bancoDir = ref('receber')
 const bForm = ref({ jogador_id: '', valor_reais: '' })
+const confirmando = ref(null)
+let confirmTimer = null
 
 const jogadoresAtivos = computed(() => partida.jogadoresAtivos)
 const transacoesAprovadas = computed(() =>
@@ -119,6 +139,12 @@ const descricao = (t) => {
   return `${nomeJog(t.origem_id)} → ${nomeJog(t.destino_id)}`
 }
 
+function pedirConfirmacao(tipo, id = null) {
+  clearTimeout(confirmTimer)
+  confirmando.value = { tipo, id }
+  confirmTimer = setTimeout(() => { confirmando.value = null }, 3500)
+}
+
 async function solicitarBanco() {
   if (!bForm.value.jogador_id || !bForm.value.valor_reais) return
   const valor = Math.round(bForm.value.valor_reais * 100)
@@ -135,28 +161,52 @@ async function solicitarBanco() {
         : `${nomeJog(bForm.value.jogador_id)} paga ${formatMoney(valor)} ao banco`,
     })
     bForm.value = { jogador_id: '', valor_reais: '' }
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
+}
+
+function clickExpulsar(j) {
+  if (confirmando.value?.tipo === 'expulsar' && confirmando.value?.id === j.id) {
+    confirmando.value = null
+    expulsar(j)
+  } else {
+    pedirConfirmacao('expulsar', j.id)
+  }
 }
 
 async function expulsar(j) {
-  if (!confirm(`Expulsar ${j.nome}?`)) return
   try {
     await api.delete(`/salas/${salaId.value}/jogadores/${j.id}?session_token=${jogador.sessionToken}`)
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
+}
+
+function clickEstornar(id) {
+  if (confirmando.value?.tipo === 'estornar' && confirmando.value?.id === id) {
+    confirmando.value = null
+    estornar(id)
+  } else {
+    pedirConfirmacao('estornar', id)
+  }
 }
 
 async function estornar(transacaoId) {
-  if (!confirm('Estornar esta transação?')) return
   try {
     await api.post(`/transacoes/${transacaoId}/estornar?session_token=${jogador.sessionToken}`)
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
-async function confirmarEncerramento() {
-  if (!confirm('Encerrar a partida? Esta ação não pode ser desfeita.')) return
+function clickEncerrar() {
+  if (confirmando.value?.tipo === 'encerrar') {
+    confirmando.value = null
+    encerrar()
+  } else {
+    pedirConfirmacao('encerrar')
+  }
+}
+
+async function encerrar() {
   try {
     await api.post(`/salas/${salaId.value}/encerrar?session_token=${jogador.sessionToken}`)
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 </script>
 
@@ -182,6 +232,7 @@ async function confirmarEncerramento() {
 .jog-saldo { font-size: 12px; margin-top: 2px; }
 .expulsar-btn { display: flex; align-items: center; gap: 5px; background: rgba(224,84,84,.08); border: 1px solid rgba(224,84,84,.2); border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 700; font-family: 'Manrope', sans-serif; color: var(--danger); cursor: pointer; flex-shrink: 0; transition: all .2s; }
 .expulsar-btn:hover { background: rgba(224,84,84,.15); }
+.expulsar-btn.confirming, .estornar-btn.confirming { background: rgba(246,173,85,.15); border-color: rgba(246,173,85,.3); color: var(--amber); }
 
 .trans-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; }
 .trans-info { flex: 1; min-width: 0; }
@@ -193,6 +244,7 @@ async function confirmarEncerramento() {
 .danger-card { padding: 18px; display: flex; flex-direction: column; gap: 8px; border-color: rgba(224,84,84,.15); background: rgba(224,84,84,.04); }
 .danger-title { font-size: 15px; font-weight: 700; color: var(--danger); }
 .danger-desc { font-size: 12px; line-height: 1.5; }
+.btn-danger-confirming { background: rgba(246,173,85,.15); border: 1px solid rgba(246,173,85,.3); color: var(--amber); font-size: 14px; font-weight: 700; padding: 12px 20px; border-radius: var(--radius); width: 100%; cursor: pointer; font-family: 'Manrope', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
 .empty { font-size: 13px; text-align: center; padding: 16px 0; }
 </style>

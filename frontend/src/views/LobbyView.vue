@@ -35,7 +35,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
           </svg>
-          <span class="mono">R$ 15.000</span>
+          <span class="mono">{{ saldoInicial }}</span>
         </div>
         <div class="info-pill">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -85,13 +85,17 @@ import { useRoute, useRouter } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { usePartidaStore } from '../stores/partidaStore'
 import { useWsStore } from '../stores/wsStore'
+import { useToastStore } from '../stores/toastStore'
 import { api } from '../stores/api'
+
+const SALDO_INICIAL = { super_banco_imobiliario: 1_500_000 }
 
 const route = useRoute()
 const router = useRouter()
 const jogador = useJogadorStore()
 const partida = usePartidaStore()
 const ws = useWsStore()
+const toast = useToastStore()
 
 const loading = ref(false)
 const copiado = ref(false)
@@ -99,6 +103,10 @@ const copiado = ref(false)
 const salaInfo = computed(() => partida.sala)
 const jogadores = computed(() => partida.jogadores.filter(j => j.status !== 'expulso'))
 const isHost = computed(() => salaInfo.value?.host_jogador_id === jogador.id)
+const saldoInicial = computed(() => {
+  const centavos = SALDO_INICIAL[salaInfo.value?.versao_jogo] ?? 1_500_000
+  return `R$ ${(centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
+})
 
 const linkCurto = computed(() => {
   if (!salaInfo.value?.link_token) return '—'
@@ -119,7 +127,7 @@ async function iniciar() {
   try {
     await api.post(`/salas/${route.params.salaId}/start?session_token=${jogador.sessionToken}`)
   } catch (e) {
-    alert(e.message)
+    toast.add(e.message)
   } finally {
     loading.value = false
   }

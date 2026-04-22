@@ -90,12 +90,14 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePartidaStore } from '../stores/partidaStore'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { useWsStore } from '../stores/wsStore'
+import { useToastStore } from '../stores/toastStore'
 import { api } from '../stores/api'
 
 const DURACAO = 60
 const partida = usePartidaStore()
 const jogador = useJogadorStore()
 const ws = useWsStore()
+const toast = useToastStore()
 
 const dados = computed(() => partida.leilaoAtivo || {})
 const timer = ref(DURACAO)
@@ -132,7 +134,7 @@ async function darLance(incremento) {
       incremento,
     })
   } catch (e) {
-    alert(e.message)
+    toast.add(e.message)
   }
 }
 

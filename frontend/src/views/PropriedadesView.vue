@@ -75,6 +75,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { usePartidaStore } from '../stores/partidaStore'
+import { useToastStore } from '../stores/toastStore'
 import { api } from '../stores/api'
 import BottomNav from '../components/BottomNav.vue'
 
@@ -82,6 +83,7 @@ const route = useRoute()
 const salaId = computed(() => route.params.salaId)
 const jogador = useJogadorStore()
 const partida = usePartidaStore()
+const toast = useToastStore()
 
 const aba = ref('minhas')
 
@@ -103,7 +105,7 @@ async function comprar(posse) {
       propriedade_id: posse.propriedade_id,
       descricao: `${jogador.nome} quer comprar ${posse.propriedade.nome}`,
     })
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
 async function comprarCasa(posse) {
@@ -116,7 +118,7 @@ async function comprarCasa(posse) {
       propriedade_id: posse.propriedade_id,
       descricao: `${jogador.nome} quer comprar casa em ${posse.propriedade.nome}`,
     })
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
 async function venderCasa(posse) {
@@ -132,7 +134,7 @@ async function venderCasa(posse) {
       propriedade_id: posse.propriedade_id,
       descricao: `${jogador.nome} quer vender casa/hotel em ${posse.propriedade.nome}`,
     })
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
 async function hipotecar(posse) {
@@ -145,7 +147,7 @@ async function hipotecar(posse) {
       propriedade_id: posse.propriedade_id,
       descricao: `${jogador.nome} quer hipotecar ${posse.propriedade.nome}`,
     })
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
 async function recuperar(posse) {
@@ -159,7 +161,7 @@ async function recuperar(posse) {
       propriedade_id: posse.propriedade_id,
       descricao: `${jogador.nome} quer recuperar hipoteca de ${posse.propriedade.nome}`,
     })
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
 async function iniciarLeilao(posse) {
@@ -169,7 +171,7 @@ async function iniciarLeilao(posse) {
       session_token: jogador.sessionToken,
       propriedade_id: posse.propriedade_id,
     })
-  } catch (e) { alert(e.message) }
+  } catch (e) { toast.add(e.message) }
 }
 
 onMounted(async () => {

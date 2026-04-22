@@ -1,6 +1,9 @@
 import json
+import logging
 from typing import Dict, List
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class WSManager:
@@ -39,8 +42,9 @@ class WSManager:
             if token == session_token:
                 try:
                     await ws.send_text(message)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning("send_to falhou para token %s: %s", session_token[:8], exc)
+                    self._rooms[sala_id] = [(t, w) for t, w in self._rooms[sala_id] if w is not ws]
                 return
 
     def connected_tokens(self, sala_id: str) -> List[str]:
