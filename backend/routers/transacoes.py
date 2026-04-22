@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -115,10 +116,6 @@ def _check_resultado_votos(transacao: Transacao, db: Session) -> Optional[str]:
         return "aprovada"
 
     return None
-
-
-# Alias para Optional sem import no topo
-from typing import Optional
 
 
 @router.post("", status_code=201)
