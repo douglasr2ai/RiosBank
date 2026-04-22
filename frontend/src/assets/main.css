@@ -1,0 +1,166 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-1:      #060E08;
+  --green:     #2ECC71;
+  --green-d:   #1A9950;
+  --green-dim: rgba(46, 204, 113, .12);
+  --text:      #DDE8DF;
+  --text-2:    #8FA893;
+  --glass-bg:  rgba(255, 255, 255, .055);
+  --glass-br:  rgba(255, 255, 255, .10);
+  --danger:    #E05454;
+  --amber:     #F6AD55;
+  --blue:      #63B3ED;
+  --radius:    20px;
+  --radius-sm: 12px;
+  --nav-h:     64px;
+}
+
+html, body, #app {
+  min-height: 100dvh;
+  background: var(--bg-1);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* ── Background decorations ── */
+.bg-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(46, 204, 113, .22) 0%, transparent 65%);
+  filter: blur(10px);
+}
+.bg-glow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: -10%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(ellipse, rgba(26, 153, 80, .12) 0%, transparent 60%);
+  filter: blur(30px);
+}
+.bg-noise {
+  position: fixed;
+  inset: 0;
+  opacity: .025;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+/* ── Glass card ── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-br);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .07);
+}
+
+/* ── Buttons ── */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: all .2s;
+}
+.btn:active { transform: scale(.97); }
+
+.btn-green {
+  background: linear-gradient(135deg, var(--green), var(--green-d));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(46, 204, 113, .3), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+.btn-green:hover { filter: brightness(1.06); }
+
+.btn-ghost {
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .09);
+  color: var(--text-2);
+}
+.btn-ghost:hover { background: rgba(255, 255, 255, .09); color: var(--text); }
+
+.btn-danger {
+  background: rgba(224, 84, 84, .1);
+  border: 1px solid rgba(224, 84, 84, .25);
+  color: var(--danger);
+}
+
+/* ── Input ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--text-2); padding-left: 2px; }
+.input-wrap { position: relative; }
+.input-icon {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--text-2); pointer-events: none; display: flex;
+}
+.input-icon svg { width: 15px; height: 15px; }
+
+input, select {
+  width: 100%;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px 13px 40px;
+  font-size: 14px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  color: var(--text);
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color .2s, background .2s;
+}
+input::placeholder, select::placeholder { color: var(--text-2); opacity: .5; }
+input:focus, select:focus {
+  border-color: rgba(46, 204, 113, .45);
+  background: rgba(46, 204, 113, .05);
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, .08);
+}
+
+/* ── Section title ── */
+.section-title {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding-left: 2px;
+}
+
+/* ── Mono numbers ── */
+.mono { font-family: 'JetBrains Mono', monospace; }
+.text-green { color: var(--green); }
+.text-danger { color: var(--danger); }
+.text-amber { color: var(--amber); }
+.text-muted { color: var(--text-2); }
