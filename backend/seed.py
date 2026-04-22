@@ -64,7 +64,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "verde_escuro", "cor_hex": "#388E3C",
         "nome": "Av. Recife",
-        "valor_compra": 0, "valor_hipoteca": 70_000,
+        "valor_compra": 140_000, "valor_hipoteca": 70_000,
         "custo_casa": 100_000, "custo_hotel": 100_000,
         "aluguel_sem_casa": 10_000, "aluguel_1_casa": 50_000,
         "aluguel_2_casas": 150_000, "aluguel_3_casas": 450_000,
@@ -73,7 +73,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "verde_escuro", "cor_hex": "#388E3C",
         "nome": "Av. Brigadeiro Faria Lima",
-        "valor_compra": 0, "valor_hipoteca": 70_000,
+        "valor_compra": 140_000, "valor_hipoteca": 70_000,
         "custo_casa": 100_000, "custo_hotel": 100_000,
         "aluguel_sem_casa": 10_000, "aluguel_1_casa": 50_000,
         "aluguel_2_casas": 150_000, "aluguel_3_casas": 450_000,
@@ -82,7 +82,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "verde_escuro", "cor_hex": "#388E3C",
         "nome": "Av. Paulista",
-        "valor_compra": 0, "valor_hipoteca": 80_000,
+        "valor_compra": 160_000, "valor_hipoteca": 80_000,
         "custo_casa": 100_000, "custo_hotel": 100_000,
         "aluguel_sem_casa": 12_000, "aluguel_1_casa": 60_000,
         "aluguel_2_casas": 180_000, "aluguel_3_casas": 500_000,
