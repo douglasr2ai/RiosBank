@@ -88,7 +88,7 @@ import { useWsStore } from '../stores/wsStore'
 import { useToastStore } from '../stores/toastStore'
 import { api } from '../stores/api'
 
-const SALDO_INICIAL = { super_banco_imobiliario: 1_500_000 }
+const SALDO_INICIAL = { super_banco_imobiliario: 2_500_000 }
 
 const route = useRoute()
 const router = useRouter()

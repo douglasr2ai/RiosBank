@@ -50,7 +50,7 @@
               </svg>
             </span>
             <select v-model="form.versao_jogo" style="padding-left: 40px">
-              <option value="super_banco_imobiliario">Super Banco Imobiliário · R$15.000</option>
+              <option value="super_banco_imobiliario">Super Banco Imobiliário · R$25.000</option>
             </select>
           </div>
         </div>
