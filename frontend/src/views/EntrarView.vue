@@ -1,9 +1,17 @@
 <template>
   <div class="page">
     <div class="wrap">
+      <!-- Back -->
+      <button class="back-row" @click="$router.push({ name: 'landing' })">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Voltar
+      </button>
+
       <!-- Marca -->
       <div class="brand-block">
-        <h1 class="brand">Rios<span>Bank</span></h1>
+        <div class="brand">Rios<span>Bank</span></div>
         <p class="tagline">Controle financeiro preciso para o seu tabuleiro.</p>
       </div>
 
@@ -99,7 +107,7 @@
       <div v-if="!linkToken" class="bottom-links">
         <button class="link-btn" @click="$router.push({ name: 'historico-busca' })">Histórico</button>
         <div class="divider-v" />
-        <button class="link-btn">Ajuda</button>
+        <button class="link-btn" @click="$router.push({ name: 'landing' })">Início</button>
       </div>
     </div>
   </div>
@@ -205,26 +213,34 @@ async function entrarNaSala(data) {
   position: relative; z-index: 1;
 }
 
-.brand-block { text-align: center; padding: 8px 0 8px; }
-.brand { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+.back-row {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--text-2);
+  font-family: 'Manrope', sans-serif; padding: 0;
+  transition: color .2s; align-self: flex-start;
+}
+.back-row:hover { color: var(--text); }
+.back-row svg { width: 16px; height: 16px; }
+
+.brand-block { text-align: center; padding: 4px 0; }
+.brand { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
 .brand span { color: var(--green); }
-.tagline { font-size: 14px; color: var(--text-2); margin-top: 6px; }
+.tagline { font-size: 13px; color: var(--text-2); margin-top: 5px; }
 
 .card { padding: 22px; display: flex; flex-direction: column; gap: 12px; }
 .card-title { font-size: 16px; font-weight: 700; }
 .hint-link { font-size: 12px; line-height: 1.5; }
-
 .erro-msg { font-size: 12px; color: var(--danger); }
 
 .bottom-links {
   display: flex; align-items: center; justify-content: center;
-  gap: 0; padding-top: 4px;
+  padding-top: 4px;
 }
 .link-btn {
   background: none; border: none; cursor: pointer;
   font-size: 13px; font-weight: 600; color: var(--text-2);
-  font-family: 'Manrope', sans-serif;
-  padding: 6px 16px;
+  font-family: 'Manrope', sans-serif; padding: 6px 16px;
   transition: color .2s;
 }
 .link-btn:hover { color: var(--text); }

@@ -31,7 +31,7 @@ export const useWsStore = defineStore('ws', () => {
       if (e.code === 4001) {
         // Expulso
         useJogadorStore().clear()
-        router.push({ name: 'home' })
+        router.push({ name: 'entrar' })
         return
       }
       if (e.code === 4002) {
@@ -84,7 +84,7 @@ export const useWsStore = defineStore('ws', () => {
           jogador.clear()
           partida.clear()
           disconnect()
-          router.push({ name: 'home' })
+          router.push({ name: 'entrar' })
         } else {
           partida.updateJogador(msg.dados.jogador_id, { status: 'expulso' })
         }

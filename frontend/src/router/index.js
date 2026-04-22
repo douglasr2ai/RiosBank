@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 
 const routes = [
-  { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
+  { path: '/', name: 'landing', component: () => import('../views/LandingView.vue') },
+  { path: '/entrar', name: 'entrar', component: () => import('../views/EntrarView.vue') },
   { path: '/criar', name: 'criar-sala', component: () => import('../views/CriarSalaView.vue') },
   { path: '/lobby/:salaId', name: 'lobby', component: () => import('../views/LobbyView.vue'), meta: { requiresSession: true } },
   { path: '/jogo/:salaId', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { requiresSession: true } },
@@ -13,7 +14,7 @@ const routes = [
   { path: '/espectador/:salaId', name: 'espectador', component: () => import('../views/EspectadorView.vue'), meta: { requiresSession: true } },
   { path: '/historico', name: 'historico-busca', component: () => import('../views/HistoricoBuscaView.vue') },
   { path: '/historico/:linkToken', name: 'historico-resumo', component: () => import('../views/HistoricoResumoView.vue') },
-  { path: '/join/:linkToken', name: 'join', component: () => import('../views/HomeView.vue') },
+  { path: '/join/:linkToken', name: 'join', component: () => import('../views/EntrarView.vue') },
 ]
 
 const router = createRouter({
@@ -25,7 +26,7 @@ router.beforeEach((to) => {
   if (to.meta.requiresSession) {
     const jogador = useJogadorStore()
     if (!jogador.sessionToken) {
-      return { name: 'home' }
+      return { name: 'entrar' }
     }
   }
 })

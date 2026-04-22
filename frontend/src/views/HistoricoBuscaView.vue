@@ -2,7 +2,7 @@
   <div class="page">
     <div class="wrap">
       <div class="top-row">
-        <button class="back-btn" @click="$router.push({ name: 'home' })">
+        <button class="back-btn" @click="$router.push({ name: 'landing' })">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
