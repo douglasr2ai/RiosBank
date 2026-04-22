@@ -17,7 +17,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "verde_claro", "cor_hex": "#8BC34A",
         "nome": "Av. Beira Mar",
-        "valor_compra": 0, "valor_hipoteca": 50_000,
+        "valor_compra": 60_000, "valor_hipoteca": 50_000,
         "custo_casa": 50_000, "custo_hotel": 50_000,
         "aluguel_sem_casa": 2_000, "aluguel_1_casa": 10_000,
         "aluguel_2_casas": 30_000, "aluguel_3_casas": 90_000,
@@ -26,7 +26,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "verde_claro", "cor_hex": "#8BC34A",
         "nome": "Av. Brasil",
-        "valor_compra": 0, "valor_hipoteca": 50_000,
+        "valor_compra": 75_000, "valor_hipoteca": 50_000,
         "custo_casa": 50_000, "custo_hotel": 50_000,
         "aluguel_sem_casa": 4_000, "aluguel_1_casa": 20_000,
         "aluguel_2_casas": 60_000, "aluguel_3_casas": 180_000,
@@ -35,7 +35,7 @@ PROPRIEDADES = [
     {
         "tipo": "rua", "grupo_cor": "verde_claro", "cor_hex": "#8BC34A",
         "nome": "Av. 9 de Julho",
-        "valor_compra": 0, "valor_hipoteca": 50_000,
+        "valor_compra": 100_000, "valor_hipoteca": 50_000,
         "custo_casa": 50_000, "custo_hotel": 50_000,
         "aluguel_sem_casa": 6_000, "aluguel_1_casa": 30_000,
         "aluguel_2_casas": 90_000, "aluguel_3_casas": 270_000,
