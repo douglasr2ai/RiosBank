@@ -30,6 +30,7 @@ dist/
 # Variáveis de ambiente
 .env
 !.env.example
+!frontend/.env
 
 # OS
 .DS_Store
