@@ -43,6 +43,24 @@ export const usePartidaStore = defineStore('partida', () => {
     }
   }
 
+  function upsertJogador(dados) {
+    const idx = jogadores.value.findIndex(j => j.id === dados.jogador_id)
+    const entrada = {
+      id: dados.jogador_id,
+      nome: dados.nome,
+      saldo: dados.saldo,
+      status: dados.status,
+      ordem_entrada: dados.ordem_entrada,
+      online: dados.online,
+    }
+    if (idx >= 0) {
+      jogadores.value[idx] = { ...jogadores.value[idx], ...entrada }
+    } else {
+      jogadores.value.push(entrada)
+      jogadores.value.sort((a, b) => a.ordem_entrada - b.ordem_entrada)
+    }
+  }
+
   function setAprovacaoPendente(dados) {
     aprovacaoPendente.value = { ...dados, votos: {} }
   }
@@ -103,7 +121,7 @@ export const usePartidaStore = defineStore('partida', () => {
   return {
     sala, jogadores, posses, transacoes, aprovacaoPendente, leilaoAtivo,
     jogadoresAtivos, possesDe, propriedadesDisponiveis,
-    setSala, addTransacao, updateJogador, setAprovacaoPendente, registrarVoto, clearAprovacao,
+    setSala, addTransacao, updateJogador, upsertJogador, setAprovacaoPendente, registrarVoto, clearAprovacao,
     setLeilaoAtivo, clearLeilao, updatePosse,
     carregarSala, carregarPropriedades, carregarTransacoes, clear,
   }

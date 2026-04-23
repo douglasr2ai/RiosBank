@@ -66,6 +66,9 @@ export const useWsStore = defineStore('ws', () => {
 
     switch (msg.tipo) {
       case 'jogador_conectado':
+        partida.upsertJogador(msg.dados)
+        break
+
       case 'jogador_desconectado':
         partida.updateJogador(msg.dados.jogador_id, { online: msg.dados.online })
         break

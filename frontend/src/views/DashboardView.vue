@@ -2,8 +2,19 @@
   <div class="page">
     <div class="header">
       <div class="brand">Rios<span>Bank</span></div>
-      <div class="ws-pill" :class="ws.connected ? 'pill-ok' : 'pill-off'">
-        <span class="dot" />{{ ws.connected ? 'Conectado' : 'Reconectando' }}
+      <div class="header-right">
+        <div class="player-pill">
+          <div class="pp-avatar">{{ jogador.nome?.[0]?.toUpperCase() }}</div>
+          <span class="pp-nome">{{ jogador.nome }}</span>
+          <span class="ws-dot" :class="ws.connected ? 'dot-ok' : 'dot-off'" :title="ws.connected ? 'Conectado' : 'Reconectando…'" />
+        </div>
+        <button class="exit-btn" title="Sair da partida" @click="sairDaPartida">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -124,6 +135,59 @@
       <div class="modal-sheet glass">
         <div class="sheet-handle" />
         <h3 class="modal-title">Cobrar aluguel</h3>
+
+        <div class="field">
+          <label>Qual imóvel?</label>
+          <select v-model="aForm.posse_id" style="padding-left:14px" @change="onPosseSelecionada">
+            <option value="" disabled>Selecione o imóvel</option>
+            <option v-for="p in minhasPropriedades" :key="p.id" :value="p.id">
+              {{ p.propriedade.nome }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Input de dados para ações -->
+        <div v-if="aPosseSelecionada && isAcao" class="field">
+          <label>Soma dos dados</label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px">
+                <rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+              </svg>
+            </span>
+            <input
+              v-model.number="aForm.soma_dados"
+              type="number" placeholder="ex: 7" min="2" max="12"
+              @input="onSomaDados"
+            />
+          </div>
+          <div v-if="aForm.soma_dados" class="aluguel-preview" style="margin-top:4px">
+            <div class="preview-prop">
+              <span class="prop-cor" :style="`background:${aPosseSelecionada.propriedade.cor_hex}`" />
+              <span class="preview-nome">{{ aPosseSelecionada.propriedade.nome }}</span>
+              <span class="preview-estado">{{ aForm.soma_dados }} × R$ {{ (aPosseSelecionada.propriedade.multiplicador_dado / 100).toLocaleString('pt-BR') }}</span>
+            </div>
+            <div class="preview-valor">{{ formatMoney(aAluguelAuto) }}</div>
+          </div>
+        </div>
+
+        <!-- Preview do aluguel calculado (propriedades normais) -->
+        <div v-else-if="aPosseSelecionada" class="aluguel-preview">
+          <div class="preview-prop">
+            <span
+              class="prop-cor"
+              :style="aPosseSelecionada.propriedade.cor_hex ? `background:${aPosseSelecionada.propriedade.cor_hex}` : ''"
+            />
+            <span class="preview-nome">{{ aPosseSelecionada.propriedade.nome }}</span>
+            <span class="preview-estado">
+              <template v-if="aPosseSelecionada.tem_hotel">🏨 hotel</template>
+              <template v-else-if="aPosseSelecionada.num_casas > 0">{{ aPosseSelecionada.num_casas }} casa(s)</template>
+              <template v-else>sem casas</template>
+            </span>
+          </div>
+          <div class="preview-valor">{{ formatMoney(aAluguelAuto) }}</div>
+        </div>
+
         <div class="field">
           <label>De quem cobrar?</label>
           <select v-model="aForm.destino_id" style="padding-left:14px">
@@ -131,13 +195,15 @@
             <option v-for="j in outrosJogadores" :key="j.id" :value="j.id">{{ j.nome }}</option>
           </select>
         </div>
+
         <div class="field">
-          <label>Valor do aluguel (R$)</label>
+          <label>Valor (R$) — ajuste se necessário</label>
           <div class="input-wrap">
             <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>
             <input v-model.number="aForm.valor_reais" type="number" placeholder="0" min="1" />
           </div>
         </div>
+
         <p v-if="aErro" class="erro-msg">{{ aErro }}</p>
         <button class="btn btn-green" @click="enviarAluguel">Cobrar</button>
       </div>
@@ -149,7 +215,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { usePartidaStore } from '../stores/partidaStore'
 import { useWsStore } from '../stores/wsStore'
@@ -157,6 +223,7 @@ import { api } from '../stores/api'
 import BottomNav from '../components/BottomNav.vue'
 
 const route = useRoute()
+const router = useRouter()
 const salaId = computed(() => route.params.salaId)
 const jogador = useJogadorStore()
 const partida = usePartidaStore()
@@ -165,7 +232,7 @@ const ws = useWsStore()
 const showTransferencia = ref(false)
 const showAluguel = ref(false)
 const tForm = ref({ destino_id: '', valor_reais: '' })
-const aForm = ref({ destino_id: '', valor_reais: '' })
+const aForm = ref({ posse_id: '', destino_id: '', valor_reais: '', soma_dados: '' })
 const tErro = ref('')
 const aErro = ref('')
 
@@ -174,6 +241,39 @@ const transacoes = computed(() => partida.transacoes)
 const ultimasTransacoes = computed(() => transacoes.value.filter(t => t.status === 'aprovada').slice(0, 4))
 const transacoesPendentes = computed(() => transacoes.value.filter(t => t.status === 'pendente'))
 const minhasPropriedades = computed(() => partida.posses.filter(p => p.jogador_id === jogador.id))
+
+const aPosseSelecionada = computed(() =>
+  minhasPropriedades.value.find(p => p.id === aForm.value.posse_id) ?? null
+)
+
+const isAcao = computed(() => aPosseSelecionada.value?.propriedade?.tipo === 'acao')
+
+const aAluguelAuto = computed(() => {
+  const p = aPosseSelecionada.value
+  if (!p) return 0
+  const prop = p.propriedade
+  if (prop.tipo === 'acao') {
+    const soma = Number(aForm.value.soma_dados) || 0
+    return soma * (prop.multiplicador_dado ?? 0)
+  }
+  if (p.tem_hotel)        return prop.aluguel_hotel   ?? 0
+  if (p.num_casas === 4)  return prop.aluguel_4_casas ?? 0
+  if (p.num_casas === 3)  return prop.aluguel_3_casas ?? 0
+  if (p.num_casas === 2)  return prop.aluguel_2_casas ?? 0
+  if (p.num_casas === 1)  return prop.aluguel_1_casa  ?? 0
+  return prop.aluguel_sem_casa ?? 0
+})
+
+function onPosseSelecionada() {
+  aForm.value.soma_dados = ''
+  aForm.value.valor_reais = isAcao.value ? '' : aAluguelAuto.value / 100
+}
+
+function onSomaDados() {
+  if (aForm.value.soma_dados) {
+    aForm.value.valor_reais = aAluguelAuto.value / 100
+  }
+}
 const totalCasas = computed(() => minhasPropriedades.value.reduce((s, p) => s + p.num_casas, 0))
 const outrosJogadores = computed(() => partida.jogadoresAtivos.filter(j => j.id !== jogador.id))
 
@@ -205,7 +305,7 @@ const descricaoTransacao = (t) => {
   if (t.descricao) return t.descricao
   const tipos = {
     transferencia: `${nomeJog(t.origem_id)} → ${nomeJog(t.destino_id)} · ${formatMoney(t.valor)}`,
-    aluguel: `Aluguel ${nomeJog(t.origem_id)} cobrou de ${nomeJog(t.destino_id)}`,
+    aluguel: `Aluguel ${nomeJog(t.destino_id)} cobrou de ${nomeJog(t.origem_id)}`,
     compra_propriedade: `${nomeJog(t.origem_id)} comprou imóvel`,
     leilao: `Leilão encerrado`,
   }
@@ -228,7 +328,7 @@ function abrirTransferencia() {
 }
 
 function abrirAluguel() {
-  aForm.value = { destino_id: '', valor_reais: '' }
+  aForm.value = { posse_id: '', destino_id: '', valor_reais: '', soma_dados: '' }
   aErro.value = ''
   showAluguel.value = true
 }
@@ -257,6 +357,10 @@ async function enviarAluguel() {
     aErro.value = 'Preencha todos os campos.'
     return
   }
+  const nomeImovel = aPosseSelecionada.value?.propriedade?.nome
+  const descricao = nomeImovel
+    ? `Aluguel de ${nomeImovel} cobrado por ${jogador.nome}`
+    : `Aluguel cobrado por ${jogador.nome}`
   try {
     await api.post('/transacoes', {
       sala_id: salaId.value,
@@ -264,12 +368,21 @@ async function enviarAluguel() {
       tipo: 'aluguel',
       valor: Math.round(aForm.value.valor_reais * 100),
       destino_id: aForm.value.destino_id,
-      descricao: `Aluguel cobrado por ${jogador.nome}`,
+      descricao,
     })
     showAluguel.value = false
   } catch (e) {
     aErro.value = e.message
   }
+}
+
+async function sairDaPartida() {
+  if (!confirm('Sair da partida? Você será marcado como expulso e não poderá retornar.')) return
+  try {
+    await api.post(`/salas/${salaId.value}/sair?session_token=${jogador.sessionToken}`)
+  } catch {}
+  ws.disconnect()
+  router.push('/')
 }
 
 onMounted(async () => {
@@ -295,14 +408,42 @@ onMounted(async () => {
 .brand { font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
 .brand span { color: var(--green); }
 
-.ws-pill {
-  display: flex; align-items: center; gap: 6px;
-  border-radius: 999px; padding: 5px 11px;
-  font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+.player-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-br);
+  border-radius: 999px; padding: 6px 12px 6px 6px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-.pill-ok { background: var(--green-dim); border: 1px solid rgba(46,204,113,.2); color: var(--green); }
-.pill-off { background: rgba(224,84,84,.08); border: 1px solid rgba(224,84,84,.2); color: var(--danger); }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.exit-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(224, 84, 84, .08);
+  border: 1px solid rgba(224, 84, 84, .2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--danger);
+  transition: background .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.exit-btn:hover { background: rgba(224, 84, 84, .18); border-color: rgba(224, 84, 84, .4); }
+.exit-btn svg { width: 16px; height: 16px; }
+.pp-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--green-dim); border: 1px solid rgba(46,204,113,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: var(--green);
+}
+.pp-nome { font-size: 13px; font-weight: 700; }
+.ws-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-ok  { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.dot-off { background: var(--danger); animation: blink .9s step-start infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 
 .wrap {
   width: 100%; max-width: 360px;
@@ -378,4 +519,18 @@ onMounted(async () => {
   border-radius: 2px; align-self: center; margin-bottom: 4px;
 }
 .modal-title { font-size: 18px; font-weight: 800; }
+
+.aluguel-preview {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--green-dim);
+  border: 1px solid rgba(46,204,113,.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  gap: 12px;
+}
+.preview-prop { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.prop-cor { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; background: var(--text-2); }
+.preview-nome { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-estado { font-size: 11px; color: var(--text-2); white-space: nowrap; flex-shrink: 0; }
+.preview-valor { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--green); flex-shrink: 0; }
 </style>

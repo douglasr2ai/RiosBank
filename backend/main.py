@@ -77,6 +77,9 @@ async def websocket_endpoint(
         "dados": {
             "jogador_id": jogador.id,
             "nome": jogador.nome,
+            "saldo": jogador.saldo,
+            "status": jogador.status,
+            "ordem_entrada": jogador.ordem_entrada,
             "online": True,
         },
     })

@@ -25,18 +25,19 @@
               <span v-if="p.propriedade.tipo === 'rua'">
                 {{ p.num_casas > 0 ? p.num_casas + ' casa(s)' : '' }}
                 {{ p.tem_hotel ? '1 hotel' : '' }}
-                {{ !p.num_casas && !p.tem_hotel ? 'sem benfeitorias' : '' }}
+                {{ !p.num_casas && !p.tem_hotel ? 'sem casas' : '' }}
               </span>
               <span v-else>Ação · dado × {{ formatMoney(p.propriedade.multiplicador_dado) }}</span>
               <span v-if="p.hipotecada" class="hipotecada-tag">hipotecada</span>
             </p>
           </div>
           <div class="prop-actions">
-            <button v-if="!p.hipotecada && p.propriedade.tipo === 'rua'" class="pill-btn" @click="comprarCasa(p)">
-              +casa
-            </button>
-            <button v-if="!p.hipotecada && (p.num_casas > 0 || p.tem_hotel)" class="pill-btn" @click="venderCasa(p)">
-              -casa
+            <button
+              v-if="!p.hipotecada && p.propriedade.tipo === 'rua'"
+              class="pill-btn pill-casa"
+              @click="abrirCasasModal(p)"
+            >
+              🏠 casas
             </button>
             <button v-if="!p.hipotecada" class="pill-btn pill-warn" @click="hipotecar(p)">
               hipot.
@@ -63,6 +64,57 @@
           </div>
           <button class="pill-btn pill-ok" @click="comprar(p)">comprar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de casas -->
+    <div v-if="showCasasModal && casasPosse" class="modal-overlay" @click.self="showCasasModal = false">
+      <div class="modal-sheet glass">
+        <div class="sheet-handle" />
+
+        <!-- Header da propriedade -->
+        <div class="casa-header">
+          <span class="casa-cor" :style="{ background: casasPosse.propriedade.cor_hex || '#78909C' }" />
+          <span class="casa-nome">{{ casasPosse.propriedade.nome }}</span>
+        </div>
+
+        <!-- Stepper -->
+        <div class="casa-section-label">Quantas casas?</div>
+        <div class="casa-stepper">
+          <button
+            v-for="opt in casasOpcoes"
+            :key="opt.valor"
+            class="casa-opt"
+            :class="{
+              'opt-current': opt.valor === casasAtual,
+              'opt-selected': opt.valor === casasTarget,
+              'opt-disabled': !opt.disponivel,
+            }"
+            :disabled="!opt.disponivel"
+            @click="casasTarget = opt.valor"
+          >
+            <span class="opt-label">{{ opt.label }}</span>
+            <span v-if="opt.aluguel != null" class="opt-aluguel">{{ formatMoneyShort(opt.aluguel) }}</span>
+          </button>
+        </div>
+
+        <!-- Resumo -->
+        <div v-if="casasTarget !== null && casasTarget !== casasAtual" class="casa-resumo">
+          <div class="resumo-acao">{{ casasResumoAcao }}</div>
+          <div class="resumo-valor" :class="casasNetCusto > 0 ? 'val-neg' : 'val-pos'">
+            {{ casasNetCusto > 0 ? '-' : '+' }}{{ formatMoney(Math.abs(casasNetCusto)) }}
+          </div>
+        </div>
+
+        <p v-if="casasErro" class="erro-msg">{{ casasErro }}</p>
+
+        <button
+          class="btn btn-green"
+          :disabled="casasTarget === null || casasTarget === casasAtual"
+          @click="confirmarCasas"
+        >
+          Confirmar
+        </button>
       </div>
     </div>
 
@@ -95,6 +147,108 @@ const formatMoney = (val) => {
   return `R$ ${(val / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
 }
 
+const formatMoneyShort = (val) => {
+  if (!val && val !== 0) return ''
+  const r = val / 100
+  if (r >= 1000) return `${(r / 1000).toFixed(r % 1000 === 0 ? 0 : 1)}k`
+  return `${r}`
+}
+
+// ── Modal casas ──────────────────────────────────────────────────────────
+
+const showCasasModal = ref(false)
+const casasPosse = ref(null)
+const casasTarget = ref(null)   // 0-4 = casas, 5 = hotel
+const casasErro = ref('')
+
+// 5 = hotel
+const casasAtual = computed(() => {
+  if (!casasPosse.value) return 0
+  return casasPosse.value.tem_hotel ? 5 : casasPosse.value.num_casas
+})
+
+const casasOpcoes = computed(() => {
+  if (!casasPosse.value) return []
+  const p = casasPosse.value.propriedade
+  const atual = casasAtual.value
+  const sala = partida.sala
+
+  return [
+    { valor: 0, label: '0', aluguel: p.aluguel_sem_casa,  disponivel: atual !== 0 },
+    { valor: 1, label: '1', aluguel: p.aluguel_1_casa,    disponivel: atual !== 1 && (atual > 1 || (sala?.casas_disponiveis ?? 0) >= 1) },
+    { valor: 2, label: '2', aluguel: p.aluguel_2_casas,   disponivel: atual !== 2 && (atual > 2 || (sala?.casas_disponiveis ?? 0) >= (2 - atual)) },
+    { valor: 3, label: '3', aluguel: p.aluguel_3_casas,   disponivel: atual !== 3 && (atual > 3 || (sala?.casas_disponiveis ?? 0) >= (3 - atual)) },
+    { valor: 4, label: '4', aluguel: p.aluguel_4_casas,   disponivel: atual !== 4 && atual !== 5 && (atual > 4 || (sala?.casas_disponiveis ?? 0) >= (4 - atual)) },
+    { valor: 5, label: '🏨', aluguel: p.aluguel_hotel,   disponivel: atual === 4 || atual === 5 },
+  ]
+})
+
+const casasNetCusto = computed(() => {
+  const p = casasPosse.value?.propriedade
+  if (!p || casasTarget.value === null) return 0
+  const atual = casasAtual.value
+  const target = casasTarget.value
+
+  if (atual === 4 && target === 5) return p.custo_hotel ?? p.custo_casa    // comprar hotel
+  if (atual === 5 && target === 4) return -Math.floor((p.custo_hotel ?? p.custo_casa) / 2) // vender hotel
+  if (target > atual) return (target - atual) * p.custo_casa               // comprar casas
+  return (target - atual) * Math.floor(p.custo_casa / 2)                   // vender casas (negativo = recebe)
+})
+
+const casasResumoAcao = computed(() => {
+  const atual = casasAtual.value
+  const target = casasTarget.value
+  if (atual === 5 && target === 4) return 'Vender hotel → 4 casas'
+  if (atual === 4 && target === 5) return 'Comprar hotel'
+  if (target > atual) return `Comprar ${target - atual} casa(s) · de ${atual} → ${target}`
+  return `Vender ${atual - target} casa(s) · de ${atual} → ${target}`
+})
+
+function abrirCasasModal(posse) {
+  casasPosse.value = posse
+  casasTarget.value = null
+  casasErro.value = ''
+  showCasasModal.value = true
+}
+
+async function confirmarCasas() {
+  casasErro.value = ''
+  const atual = casasAtual.value
+  const target = casasTarget.value
+  const p = casasPosse.value
+  const prop = p.propriedade
+  const custo = casasNetCusto.value   // positivo = paga, negativo = recebe
+
+  try {
+    if (target > atual || (atual === 4 && target === 5)) {
+      // Comprar casas / hotel
+      await api.post('/transacoes', {
+        sala_id: salaId.value,
+        session_token: jogador.sessionToken,
+        tipo: 'compra_casa',
+        valor: Math.abs(custo),
+        propriedade_id: p.propriedade_id,
+        descricao: casasResumoAcao.value + ` em ${prop.nome}`,
+      })
+    } else {
+      // Vender casas / hotel
+      await api.post('/transacoes', {
+        sala_id: salaId.value,
+        session_token: jogador.sessionToken,
+        tipo: 'venda_casa',
+        valor: Math.abs(custo),
+        propriedade_id: p.propriedade_id,
+        descricao: casasResumoAcao.value + ` em ${prop.nome}`,
+      })
+    }
+    showCasasModal.value = false
+  } catch (e) {
+    casasErro.value = e.message
+  }
+}
+
+// ── Outras ações ──────────────────────────────────────────────────────────
+
 async function comprar(posse) {
   try {
     await api.post('/transacoes', {
@@ -104,35 +258,6 @@ async function comprar(posse) {
       valor: posse.propriedade.valor_compra,
       propriedade_id: posse.propriedade_id,
       descricao: `${jogador.nome} quer comprar ${posse.propriedade.nome}`,
-    })
-  } catch (e) { toast.add(e.message) }
-}
-
-async function comprarCasa(posse) {
-  try {
-    await api.post('/transacoes', {
-      sala_id: salaId.value,
-      session_token: jogador.sessionToken,
-      tipo: 'compra_casa',
-      valor: posse.propriedade.custo_casa,
-      propriedade_id: posse.propriedade_id,
-      descricao: `${jogador.nome} quer comprar casa em ${posse.propriedade.nome}`,
-    })
-  } catch (e) { toast.add(e.message) }
-}
-
-async function venderCasa(posse) {
-  const valor = posse.tem_hotel
-    ? Math.floor(posse.propriedade.custo_hotel / 2)
-    : Math.floor(posse.propriedade.custo_casa / 2)
-  try {
-    await api.post('/transacoes', {
-      sala_id: salaId.value,
-      session_token: jogador.sessionToken,
-      tipo: 'venda_casa',
-      valor,
-      propriedade_id: posse.propriedade_id,
-      descricao: `${jogador.nome} quer vender casa/hotel em ${posse.propriedade.nome}`,
     })
   } catch (e) { toast.add(e.message) }
 }
@@ -202,8 +327,55 @@ onMounted(async () => {
 .prop-actions { display: flex; gap: 4px; padding: 8px 10px 8px 0; flex-wrap: wrap; justify-content: flex-end; }
 .pill-btn { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: 700; font-family: 'Manrope', sans-serif; color: var(--text-2); cursor: pointer; white-space: nowrap; transition: all .15s; }
 .pill-btn:hover { background: rgba(255,255,255,.1); color: var(--text); }
-.pill-ok { background: var(--green-dim); border-color: rgba(46,204,113,.2); color: var(--green); }
+.pill-ok   { background: var(--green-dim); border-color: rgba(46,204,113,.2); color: var(--green); }
 .pill-warn { background: rgba(246,173,85,.1); border-color: rgba(246,173,85,.2); color: var(--amber); }
+.pill-casa { background: rgba(156,39,176,.1); border-color: rgba(156,39,176,.2); color: #CE93D8; }
 
 .empty { font-size: 13px; text-align: center; padding: 32px 0; }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; }
+.modal-sheet { width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 16px; }
+.sheet-handle { width: 40px; height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; align-self: center; margin-bottom: 4px; }
+
+.casa-header { display: flex; align-items: center; gap: 10px; }
+.casa-cor { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.casa-nome { font-size: 17px; font-weight: 800; }
+
+.casa-section-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); }
+
+.casa-stepper { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.casa-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 4px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  transition: all .15s;
+}
+.opt-label { font-size: 16px; font-weight: 800; color: var(--text); }
+.opt-aluguel { font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--text-2); }
+
+.casa-opt.opt-current { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
+.casa-opt.opt-current .opt-label { color: var(--text-2); }
+
+.casa-opt.opt-selected { border-color: rgba(46,204,113,.4); background: var(--green-dim); }
+.casa-opt.opt-selected .opt-label { color: var(--green); }
+.casa-opt.opt-selected .opt-aluguel { color: var(--green); opacity: .8; }
+
+.casa-opt.opt-disabled { opacity: .3; cursor: not-allowed; }
+
+.casa-resumo {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.resumo-acao { font-size: 13px; font-weight: 600; }
+.resumo-valor { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+.val-pos { color: var(--green); }
+.val-neg { color: var(--danger); }
+
+.erro-msg { font-size: 12px; color: var(--danger); }
 </style>

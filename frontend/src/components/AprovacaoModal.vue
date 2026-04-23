@@ -51,9 +51,15 @@
 
       <p class="hint-text text-muted">Sem voto = aprovação automática</p>
 
-      <div v-if="podeVotar" class="btn-row">
+      <div v-if="podeVotar && !jaVotei" class="btn-row">
         <button class="btn btn-danger" @click="votar('reprovado')">Reprovar</button>
         <button class="btn btn-green" @click="votar('aprovado')">Aprovar</button>
+      </div>
+      <div v-else-if="podeVotar && jaVotei" class="voto-confirmado">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Voto registrado · aguardando os demais
       </div>
       <p v-else class="participante-hint text-muted">
         Você está envolvido nesta transação.
@@ -74,6 +80,7 @@ const jogador = useJogadorStore()
 
 const dados = computed(() => partida.aprovacaoPendente)
 const timer = ref(DURACAO)
+const jaVotei = ref(false)
 let interval = null
 
 const votantes = computed(() => {
@@ -99,7 +106,7 @@ const descricaoFormatada = computed(() => {
   if (descricao) return descricao
   const mapa = {
     transferencia: `${nomeJogador(origem_id)} → ${nomeJogador(destino_id)}`,
-    aluguel: `Aluguel de ${nomeJogador(destino_id)} para ${nomeJogador(origem_id)}`,
+    aluguel: `${nomeJogador(destino_id)} cobrando aluguel de ${nomeJogador(origem_id)}`,
     compra_propriedade: `${nomeJogador(origem_id)} quer comprar propriedade`,
     compra_casa: `${nomeJogador(origem_id)} quer comprar casa`,
     venda_casa: `${nomeJogador(origem_id)} quer vender casa`,
@@ -121,6 +128,7 @@ async function votar(voto) {
       session_token: jogador.sessionToken,
       voto,
     })
+    jaVotei.value = true
   } catch (e) {
     console.error(e)
   }
@@ -217,6 +225,16 @@ onUnmounted(() => clearInterval(interval))
 
 .btn-row { display: flex; gap: 10px; }
 .btn-row .btn { flex: 1; }
+
+.voto-confirmado {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px;
+  background: var(--green-dim);
+  border: 1px solid rgba(46, 204, 113, .2);
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; color: var(--green);
+}
+.voto-confirmado svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 .participante-hint { font-size: 13px; text-align: center; }
 </style>
