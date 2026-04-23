@@ -6,6 +6,7 @@
     <AprovacaoModal v-if="partida.aprovacaoPendente" />
     <LeilaoOverlay v-if="partida.leilaoAtivo" />
     <InsolvenciaModal />
+    <FalidoOverlay />
     <ToastContainer />
   </div>
 </template>
@@ -19,6 +20,7 @@ import { useWsStore } from './stores/wsStore'
 import AprovacaoModal from './components/AprovacaoModal.vue'
 import LeilaoOverlay from './components/LeilaoOverlay.vue'
 import InsolvenciaModal from './components/InsolvenciaModal.vue'
+import FalidoOverlay from './components/FalidoOverlay.vue'
 import ToastContainer from './components/ToastContainer.vue'
 
 const router = useRouter()

@@ -78,6 +78,7 @@ class TransacaoCreate(BaseModel):
     origem_id_override: Optional[str] = None  # usado por pagamento_banco para indicar quem paga
     propriedade_id: Optional[int] = None
     descricao: Optional[str] = None
+    negociacao_dados: Optional[dict] = None
 
 
 class VotoCreate(BaseModel):

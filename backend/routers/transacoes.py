@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,6 +16,7 @@ TIPOS_VALIDOS = {
     "transferencia", "compra_propriedade", "aluguel", "hipoteca",
     "recuperar_hipoteca", "compra_casa", "venda_casa", "leilao",
     "pagamento_banco", "falencia", "estorno", "troca", "venda_banco",
+    "negociacao",
 }
 
 TIPOS_COM_INSOLVENCIA = {"aluguel", "transferencia", "leilao", "pagamento_banco"}
@@ -120,6 +122,31 @@ def _resolve_transacao(transacao: Transacao, db: Session) -> tuple:
     """
     falidos = []
     destino_ja_pago = False
+
+    if transacao.tipo == "negociacao":
+        dados = json.loads(transacao.descricao or "{}")
+        proponente = db.query(Jogador).filter_by(id=transacao.origem_id).first()
+        destinatario = db.query(Jogador).filter_by(id=transacao.destino_id).first()
+        dinheiro_enviado = dados.get("dinheiro_enviado", 0)
+        dinheiro_recebido = dados.get("dinheiro_recebido", 0)
+        if proponente:
+            proponente.saldo -= dinheiro_enviado
+            proponente.saldo += dinheiro_recebido
+        if destinatario:
+            destinatario.saldo += dinheiro_enviado
+            destinatario.saldo -= dinheiro_recebido
+        for prop_id in (dados.get("propriedades_enviadas") or []):
+            posse = db.query(PossePropriedade).filter_by(sala_id=transacao.sala_id, propriedade_id=prop_id).first()
+            if posse and destinatario:
+                posse.jogador_id = destinatario.id
+        for prop_id in (dados.get("propriedades_recebidas") or []):
+            posse = db.query(PossePropriedade).filter_by(sala_id=transacao.sala_id, propriedade_id=prop_id).first()
+            if posse and proponente:
+                posse.jogador_id = proponente.id
+        sala_obj = db.query(Sala).filter_by(id=transacao.sala_id).first()
+        if sala_obj:
+            sala_obj.ultima_atividade = datetime.now(timezone.utc)
+        return [], None
 
     if transacao.tipo in (
         "transferencia", "aluguel", "compra_propriedade",
@@ -290,6 +317,16 @@ def _resolve_transacao(transacao: Transacao, db: Session) -> tuple:
 
 def _check_resultado_votos(transacao: Transacao, db: Session) -> Optional[str]:
     """Retorna 'aprovada', 'reprovada' ou None se ainda indeciso."""
+    if transacao.tipo == "negociacao":
+        # Só o destinatário vota
+        if not transacao.destino_id:
+            return "aprovada"
+        votos = db.query(Voto).filter_by(transacao_id=transacao.id).all()
+        for v in votos:
+            if v.jogador_id == transacao.destino_id:
+                return v.voto  # "aprovado" ou "reprovado"
+        return None  # ainda aguardando
+
     sala = db.query(Sala).filter_by(id=transacao.sala_id).first()
     votantes_ids = [
         j.id for j in sala.jogadores
@@ -369,6 +406,29 @@ async def criar_transacao(body: TransacaoCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Venda benfeitorias e recupere hipoteca antes de vender ao banco")
         origem = None
         destino = jogador.id
+    elif body.tipo == "negociacao":
+        if not body.destino_id or not body.negociacao_dados:
+            raise HTTPException(status_code=400, detail="Negociação requer destino_id e negociacao_dados")
+        destino_jog = db.query(Jogador).filter_by(id=body.destino_id, sala_id=body.sala_id, status="ativo").first()
+        if not destino_jog:
+            raise HTTPException(status_code=400, detail="Jogador destino inválido")
+        # Valida propriedades enviadas pertencem ao proponente
+        for pid in (body.negociacao_dados.get("propriedades_enviadas") or []):
+            p = db.query(PossePropriedade).filter_by(sala_id=body.sala_id, propriedade_id=pid, jogador_id=jogador.id).first()
+            if not p:
+                raise HTTPException(status_code=400, detail=f"Propriedade {pid} não pertence a você")
+        # Valida propriedades recebidas pertencem ao destinatário
+        for pid in (body.negociacao_dados.get("propriedades_recebidas") or []):
+            p = db.query(PossePropriedade).filter_by(sala_id=body.sala_id, propriedade_id=pid, jogador_id=body.destino_id).first()
+            if not p:
+                raise HTTPException(status_code=400, detail=f"Propriedade {pid} não pertence ao destinatário")
+        origem = jogador.id
+        destino = body.destino_id
+        body = body.__class__(**{
+            **body.model_dump(),
+            "valor": body.negociacao_dados.get("dinheiro_enviado", 0),
+            "descricao": json.dumps(body.negociacao_dados),
+        })
     else:
         origem = jogador.id
         destino = body.destino_id
@@ -388,19 +448,8 @@ async def criar_transacao(body: TransacaoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(transacao)
 
-    votantes = [
-        j for j in sala.jogadores
-        if j.status == "ativo"
-        and j.id != transacao.origem_id
-        and j.id != transacao.destino_id
-    ]
-    if not votantes:
-        transacao.status = "aprovada"
-        transacao.resolvida_em = datetime.now(timezone.utc)
-        falidos, aviso = _resolve_transacao(transacao, db)
-        db.commit()
-        await _broadcast_resultado(body.sala_id, transacao.id, transacao.status, aviso, falidos)
-    else:
+    if transacao.tipo == "negociacao":
+        # Para negociação, apenas o destinatário vota — sempre envia o WS de aprovacao_solicitada
         await manager.broadcast(body.sala_id, {
             "tipo": "aprovacao_solicitada",
             "dados": {
@@ -411,8 +460,36 @@ async def criar_transacao(body: TransacaoCreate, db: Session = Depends(get_db)):
                 "destino_id": transacao.destino_id,
                 "propriedade_id": transacao.propriedade_id,
                 "descricao": transacao.descricao,
+                "negociacao_dados": json.loads(transacao.descricao) if transacao.descricao else None,
             },
         })
+    else:
+        votantes = [
+            j for j in sala.jogadores
+            if j.status == "ativo"
+            and j.id != transacao.origem_id
+            and j.id != transacao.destino_id
+        ]
+        if not votantes:
+            transacao.status = "aprovada"
+            transacao.resolvida_em = datetime.now(timezone.utc)
+            falidos, aviso = _resolve_transacao(transacao, db)
+            db.commit()
+            await _broadcast_resultado(body.sala_id, transacao.id, transacao.status, aviso, falidos)
+        else:
+            await manager.broadcast(body.sala_id, {
+                "tipo": "aprovacao_solicitada",
+                "dados": {
+                    "transacao_id": transacao.id,
+                    "tipo": transacao.tipo,
+                    "valor": transacao.valor,
+                    "origem_id": transacao.origem_id,
+                    "destino_id": transacao.destino_id,
+                    "propriedade_id": transacao.propriedade_id,
+                    "descricao": transacao.descricao,
+                    "negociacao_dados": None,
+                },
+            })
 
     return {"id": transacao.id, "status": transacao.status}
 
@@ -430,8 +507,14 @@ async def votar(transacao_id: str, body: VotoCreate, db: Session = Depends(get_d
     ).first()
     if not jogador:
         raise HTTPException(status_code=403, detail="Sessão inválida")
-    if jogador.id in (transacao.origem_id, transacao.destino_id):
-        raise HTTPException(status_code=400, detail="Você não pode votar na própria transação")
+    if transacao.tipo == "negociacao":
+        if jogador.id == transacao.origem_id:
+            raise HTTPException(status_code=400, detail="Você não pode votar na própria negociação")
+        if jogador.id != transacao.destino_id:
+            raise HTTPException(status_code=400, detail="Apenas o destinatário pode aceitar ou rejeitar")
+    else:
+        if jogador.id in (transacao.origem_id, transacao.destino_id):
+            raise HTTPException(status_code=400, detail="Você não pode votar na própria transação")
 
     existente = db.query(Voto).filter_by(
         transacao_id=transacao_id, jogador_id=jogador.id

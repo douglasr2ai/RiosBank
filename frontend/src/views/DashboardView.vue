@@ -76,6 +76,16 @@
           </div>
           <span>Comprar imóvel</span>
         </button>
+        <button class="acao-btn" @click="showNegociar = true">
+          <div class="acao-icon icon-pink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+          </div>
+          <span>Negociar</span>
+        </button>
       </div>
 
       <!-- Últimas transações -->
@@ -207,6 +217,8 @@
       </div>
     </div>
 
+    <NegociarModal v-model="showNegociar" :sala-id="salaId" />
+
     <BottomNav :sala-id="salaId" />
   </div>
 </template>
@@ -219,6 +231,7 @@ import { usePartidaStore } from '../stores/partidaStore'
 import { useWsStore } from '../stores/wsStore'
 import { api } from '../stores/api'
 import BottomNav from '../components/BottomNav.vue'
+import NegociarModal from '../components/NegociarModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -229,6 +242,7 @@ const ws = useWsStore()
 
 const showTransferencia = ref(false)
 const showAluguel = ref(false)
+const showNegociar = ref(false)
 const tForm = ref({ destino_id: '', valor_reais: '' })
 const aForm = ref({ posse_id: '', destino_id: '', valor_reais: '', soma_dados: '' })
 const tErro = ref('')
@@ -489,6 +503,7 @@ onMounted(async () => {
 .icon-amber { background: rgba(246,173,85,.15); color: var(--amber); }
 .icon-green { background: var(--green-dim); color: var(--green); }
 .icon-purple { background: rgba(156,39,176,.15); color: #CE93D8; }
+.icon-pink { background: rgba(236,72,153,.15); color: #ec4899; }
 
 .feed-mini { display: flex; flex-direction: column; gap: 8px; }
 .feed-item {
