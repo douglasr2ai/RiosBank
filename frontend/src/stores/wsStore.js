@@ -123,6 +123,23 @@ export const useWsStore = defineStore('ws', () => {
         partida.updateJogador(msg.dados.jogador_id, { status: 'falido' })
         break
 
+      case 'devedor_insolvente':
+        partida.setInsolvenciaAviso(msg.dados)
+        break
+
+      case 'liquidacao_forcada':
+        partida.setLiquidacaoInfo(msg.dados)
+        if (salaId) {
+          await partida.carregarSala(salaId)
+          await Promise.all([
+            partida.carregarPropriedades(salaId),
+            partida.carregarTransacoes(salaId),
+          ])
+          const meuJogador = partida.jogadores.find(j => j.id === jogador.id)
+          if (meuJogador) jogador.updateSaldo(meuJogador.saldo)
+        }
+        break
+
       case 'leilao_iniciado':
         partida.setLeilaoAtivo(msg.dados)
         break

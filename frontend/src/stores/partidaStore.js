@@ -9,6 +9,8 @@ export const usePartidaStore = defineStore('partida', () => {
   const transacoes = ref([])
   const aprovacaoPendente = ref(null)
   const leilaoAtivo = ref(null)
+  const insolvenciaAviso = ref(null)
+  const liquidacaoInfo = ref(null)
 
   const jogadoresAtivos = computed(() =>
     jogadores.value.filter(j => j.status === 'ativo')
@@ -86,6 +88,21 @@ export const usePartidaStore = defineStore('partida', () => {
     leilaoAtivo.value = null
   }
 
+  function setInsolvenciaAviso(dados) {
+    insolvenciaAviso.value = dados
+    liquidacaoInfo.value = null
+  }
+
+  function setLiquidacaoInfo(dados) {
+    liquidacaoInfo.value = dados
+    insolvenciaAviso.value = null
+  }
+
+  function clearInsolvencia() {
+    insolvenciaAviso.value = null
+    liquidacaoInfo.value = null
+  }
+
   function updatePosse(posseId, updates) {
     const idx = posses.value.findIndex(p => p.id === posseId)
     if (idx >= 0) {
@@ -116,13 +133,17 @@ export const usePartidaStore = defineStore('partida', () => {
     transacoes.value = []
     aprovacaoPendente.value = null
     leilaoAtivo.value = null
+    insolvenciaAviso.value = null
+    liquidacaoInfo.value = null
   }
 
   return {
     sala, jogadores, posses, transacoes, aprovacaoPendente, leilaoAtivo,
+    insolvenciaAviso, liquidacaoInfo,
     jogadoresAtivos, possesDe, propriedadesDisponiveis,
     setSala, addTransacao, updateJogador, upsertJogador, setAprovacaoPendente, registrarVoto, clearAprovacao,
     setLeilaoAtivo, clearLeilao, updatePosse,
+    setInsolvenciaAviso, setLiquidacaoInfo, clearInsolvencia,
     carregarSala, carregarPropriedades, carregarTransacoes, clear,
   }
 })
