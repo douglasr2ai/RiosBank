@@ -1,5 +1,7 @@
 import os
+import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -12,6 +14,33 @@ from seed import seed_propriedades
 from routers import salas, jogadores, transacoes, propriedades, leiloes, historico
 
 
+INATIVIDADE_LIMITE = timedelta(minutes=20)
+INTERVALO_VERIFICACAO = 300  # 5 minutos
+
+
+async def _tarefa_encerramento_inativo():
+    """Encerra partidas em andamento sem atividade por INATIVIDADE_LIMITE."""
+    while True:
+        await asyncio.sleep(INTERVALO_VERIFICACAO)
+        db = SessionLocal()
+        try:
+            agora = datetime.now(timezone.utc)
+            salas_ativas = db.query(Sala).filter_by(status="em_andamento").all()
+            for sala in salas_ativas:
+                ult = sala.ultima_atividade
+                if ult and ult.tzinfo is None:
+                    ult = ult.replace(tzinfo=timezone.utc)
+                if not ult or (agora - ult) >= INATIVIDADE_LIMITE:
+                    try:
+                        await salas._encerrar_sala_auto(sala, db)
+                    except Exception as exc:
+                        print(f"[auto-close] sala {sala.id}: {exc}")
+        except Exception as exc:
+            print(f"[auto-close] erro geral: {exc}")
+        finally:
+            db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs("data", exist_ok=True)
@@ -21,7 +50,13 @@ async def lifespan(app: FastAPI):
         seed_propriedades(db)
     finally:
         db.close()
+    task = asyncio.create_task(_tarefa_encerramento_inativo())
     yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(title="RiosBank API", version="1.0.0", lifespan=lifespan)
@@ -126,7 +161,6 @@ def _verificar_sucessao_host(sala_id: str, sala: Sala, db: Session, force: bool 
             if candidato.session_token in connected and candidato.id != sala.host_jogador_id:
                 sala.host_jogador_id = candidato.id
                 db.commit()
-                import asyncio
                 asyncio.create_task(
                     manager.broadcast(sala_id, {
                         "tipo": "host_alterado",
