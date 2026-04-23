@@ -179,6 +179,7 @@ async def iniciar_partida(sala_id: str, session_token: str, db: Session = Depend
         db.add(posse)
 
     sala.status = "em_andamento"
+    sala.ultima_atividade = datetime.now(timezone.utc)
     db.commit()
     db.refresh(sala)
 
@@ -327,6 +328,8 @@ async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depen
     ).count()
 
     iniciada_em = sala.criada_em
+    if iniciada_em and iniciada_em.tzinfo is None:
+        iniciada_em = iniciada_em.replace(tzinfo=timezone.utc)
     duracao = max(0, int((agora - iniciada_em).total_seconds() / 60)) if iniciada_em else 0
 
     historico = HistoricoPartida(

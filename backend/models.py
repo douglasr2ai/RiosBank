@@ -29,6 +29,7 @@ class Sala(Base):
     versao_jogo = Column(String, nullable=False, default="super_banco_imobiliario")
     criada_em = Column(DateTime, default=now_utc)
     encerrada_em = Column(DateTime, nullable=True)
+    ultima_atividade = Column(DateTime, nullable=True)
 
     jogadores = relationship(
         "Jogador", foreign_keys="Jogador.sala_id", back_populates="sala", cascade="all, delete-orphan"

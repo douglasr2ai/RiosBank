@@ -69,14 +69,23 @@ def _resolve_transacao(transacao: Transacao, db: Session) -> list:
             ).first()
             sala = db.query(Sala).filter_by(id=transacao.sala_id).first()
             if posse and sala:
-                if posse.num_casas < 4 and not posse.tem_hotel:
-                    posse.num_casas += 1
-                    sala.casas_disponiveis -= 1
-                elif posse.num_casas == 4:
-                    posse.tem_hotel = True
-                    posse.num_casas = 0
-                    sala.casas_disponiveis += 4
-                    sala.hoteis_disponiveis -= 1
+                prop = posse.propriedade
+                # hotel purchase: num_casas == 4 quando a transação foi criada
+                # quantidade calculada a partir do valor enviado
+                if prop and prop.custo_casa and prop.custo_casa > 0:
+                    quantidade = max(1, round(transacao.valor / prop.custo_casa))
+                else:
+                    quantidade = 1
+                for _ in range(quantidade):
+                    if not posse.tem_hotel:
+                        if posse.num_casas < 4:
+                            posse.num_casas += 1
+                            sala.casas_disponiveis -= 1
+                        elif posse.num_casas == 4:
+                            posse.tem_hotel = True
+                            posse.num_casas = 0
+                            sala.casas_disponiveis += 4
+                            sala.hoteis_disponiveis -= 1
 
         if transacao.tipo == "venda_casa" and transacao.propriedade_id:
             posse = db.query(PossePropriedade).filter_by(
@@ -85,14 +94,27 @@ def _resolve_transacao(transacao: Transacao, db: Session) -> list:
             ).first()
             sala = db.query(Sala).filter_by(id=transacao.sala_id).first()
             if posse and sala:
+                prop = posse.propriedade
+                half = (prop.custo_casa // 2) if (prop and prop.custo_casa) else 0
                 if posse.tem_hotel:
-                    posse.tem_hotel = False
-                    posse.num_casas = 4
-                    sala.hoteis_disponiveis += 1
-                    sala.casas_disponiveis -= 4
-                elif posse.num_casas > 0:
-                    posse.num_casas -= 1
-                    sala.casas_disponiveis += 1
+                    quantidade = 1
+                elif half > 0:
+                    quantidade = max(1, round(transacao.valor / half))
+                else:
+                    quantidade = 1
+                for _ in range(quantidade):
+                    if posse.tem_hotel:
+                        posse.tem_hotel = False
+                        posse.num_casas = 4
+                        sala.hoteis_disponiveis += 1
+                        sala.casas_disponiveis -= 4
+                    elif posse.num_casas > 0:
+                        posse.num_casas -= 1
+                        sala.casas_disponiveis += 1
+
+    sala_obj = db.query(Sala).filter_by(id=transacao.sala_id).first()
+    if sala_obj:
+        sala_obj.ultima_atividade = datetime.now(timezone.utc)
 
     return falidos
 
@@ -146,9 +168,13 @@ async def criar_transacao(body: TransacaoCreate, db: Session = Depends(get_db)):
         # caso contrário → banco paga ao jogador (destino_id)
         origem = body.origem_id_override
         destino = None if body.origem_id_override else body.destino_id
-    elif body.tipo == "hipoteca":
-        # banco paga ao jogador o valor da hipoteca
+    elif body.tipo in ("hipoteca", "venda_casa"):
+        # banco paga ao jogador
         origem = None
+        destino = jogador.id
+    elif body.tipo == "aluguel":
+        # quem foi cobrado (body.destino_id) paga; jogador (cobrador) recebe
+        origem = body.destino_id
         destino = jogador.id
     else:
         origem = jogador.id
@@ -341,23 +367,40 @@ async def estornar(transacao_id: str, session_token: str, db: Session = Depends(
             elif transacao.tipo == "recuperar_hipoteca":
                 posse.hipotecada = True
             elif transacao.tipo == "compra_casa" and sala_p:
+                prop = posse.propriedade if posse else None
                 if posse.tem_hotel:
-                    posse.tem_hotel = False
-                    posse.num_casas = 4
-                    sala_p.hoteis_disponiveis += 1
-                    sala_p.casas_disponiveis -= 4
-                elif posse.num_casas > 0:
-                    posse.num_casas -= 1
-                    sala_p.casas_disponiveis += 1
-            elif transacao.tipo == "venda_casa" and sala_p:
-                if posse.num_casas == 4:
-                    posse.tem_hotel = True
-                    posse.num_casas = 0
-                    sala_p.hoteis_disponiveis -= 1
-                    sala_p.casas_disponiveis += 4
+                    quantidade = 1
+                elif prop and prop.custo_casa and prop.custo_casa > 0:
+                    quantidade = max(1, round(transacao.valor / prop.custo_casa))
                 else:
-                    posse.num_casas += 1
-                    sala_p.casas_disponiveis -= 1
+                    quantidade = 1
+                for _ in range(quantidade):
+                    if posse.tem_hotel:
+                        posse.tem_hotel = False
+                        posse.num_casas = 4
+                        sala_p.hoteis_disponiveis += 1
+                        sala_p.casas_disponiveis -= 4
+                    elif posse.num_casas > 0:
+                        posse.num_casas -= 1
+                        sala_p.casas_disponiveis += 1
+            elif transacao.tipo == "venda_casa" and sala_p:
+                prop = posse.propriedade if posse else None
+                if posse.num_casas == 4:
+                    quantidade = 1  # desfaz venda de hotel
+                elif prop and prop.custo_casa and prop.custo_casa > 0:
+                    half = prop.custo_casa // 2 or 1
+                    quantidade = max(1, round(transacao.valor / half))
+                else:
+                    quantidade = 1
+                for _ in range(quantidade):
+                    if posse.num_casas == 4:
+                        posse.tem_hotel = True
+                        posse.num_casas = 0
+                        sala_p.hoteis_disponiveis -= 1
+                        sala_p.casas_disponiveis += 4
+                    else:
+                        posse.num_casas += 1
+                        sala_p.casas_disponiveis -= 1
 
     transacao.status = "estornada"
 
