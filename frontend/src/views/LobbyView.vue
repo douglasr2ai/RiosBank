@@ -77,7 +77,7 @@
           <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
         </svg>
         <p class="aviso-text">
-          Guarde o código ou o link de convite. Após a partida, eles dão acesso ao histórico e ao resultado final.
+          Guarde o <strong>código</strong> e a <strong>senha</strong> da sala — você vai precisar deles para acessar o histórico após o fim da partida.
         </p>
       </div>
 

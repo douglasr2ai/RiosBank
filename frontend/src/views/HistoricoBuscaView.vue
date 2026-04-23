@@ -12,19 +12,19 @@
 
       <div class="heading">
         <h2>Histórico de partidas</h2>
-        <p>Digite o nome e a senha da sala para acessar o resumo.</p>
+        <p>Digite o código e a senha da sala para acessar o resumo.</p>
       </div>
 
       <div class="glass card">
         <div class="field">
-          <label>Nome da sala</label>
+          <label>Código da sala</label>
           <div class="input-wrap">
             <span class="input-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
             </span>
-            <input v-model="nomeSala" type="text" placeholder="Ex: Sala da Família" />
+            <input v-model="codigoSala" type="text" inputmode="numeric" maxlength="6" placeholder="000000" class="mono" />
           </div>
         </div>
 
@@ -55,7 +55,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px;opacity:.5">
           <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
         </svg>
-        Apenas quem conhece o nome e a senha da sala pode acessar o histórico.
+        Apenas quem conhece o código e a senha da sala pode acessar o histórico.
       </div>
     </div>
   </div>
@@ -67,21 +67,21 @@ import { useRouter } from 'vue-router'
 import { api } from '../stores/api'
 
 const router = useRouter()
-const nomeSala = ref('')
+const codigoSala = ref('')
 const senha = ref('')
 const loading = ref(false)
 const erro = ref('')
 
 async function buscar() {
-  if (!nomeSala.value.trim() || !senha.value) {
-    erro.value = 'Preencha o nome da sala e a senha.'
+  if (!codigoSala.value.trim() || !senha.value) {
+    erro.value = 'Preencha o código da sala e a senha.'
     return
   }
   erro.value = ''
   loading.value = true
   try {
     const data = await api.post('/historico/busca', {
-      nome_sala: nomeSala.value.trim(),
+      codigo: codigoSala.value.trim(),
       senha: senha.value,
     })
     router.push({ name: 'historico-resumo', params: { linkToken: data.link_token } })

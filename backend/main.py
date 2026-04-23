@@ -58,6 +58,11 @@ def _aplicar_migrations():
             conn.execute(text("ALTER TABLE salas ADD COLUMN codigo VARCHAR(6)"))
             conn.commit()
 
+        cols_historico = {row[1] for row in conn.execute(text("PRAGMA table_info(historico_partidas)"))}
+        if "codigo" not in cols_historico:
+            conn.execute(text("ALTER TABLE historico_partidas ADD COLUMN codigo VARCHAR(6)"))
+            conn.commit()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

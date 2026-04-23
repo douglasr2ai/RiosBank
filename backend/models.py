@@ -171,6 +171,7 @@ class HistoricoPartida(Base):
 
     id = Column(String, primary_key=True, default=new_uuid)
     nome_sala = Column(String, nullable=False)
+    codigo = Column(String(6), nullable=True)
     senha_hash = Column(String, nullable=False)
     link_token = Column(String, nullable=False, unique=True)
     jogadores_count = Column(Integer, nullable=False)

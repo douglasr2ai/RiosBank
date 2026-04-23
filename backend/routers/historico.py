@@ -15,6 +15,7 @@ def _historico_dict(h: HistoricoPartida) -> dict:
         "id": h.id,
         "link_token": h.link_token,
         "nome_sala": h.nome_sala,
+        "codigo": h.codigo,
         "jogadores_count": h.jogadores_count,
         "iniciada_em": h.iniciada_em.isoformat(),
         "encerrada_em": h.encerrada_em.isoformat(),
@@ -35,7 +36,7 @@ def get_por_link(link_token: str, db: Session = Depends(get_db)):
 
 @router.post("/busca")
 def buscar_historico(body: HistoricoBusca, db: Session = Depends(get_db)):
-    h = db.query(HistoricoPartida).filter_by(nome_sala=body.nome_sala).first()
+    h = db.query(HistoricoPartida).filter_by(codigo=body.codigo.strip()).first()
     if not h or not pwd_context.verify(body.senha, h.senha_hash):
         raise HTTPException(status_code=404, detail="Histórico não encontrado ou senha inválida")
     return _historico_dict(h)

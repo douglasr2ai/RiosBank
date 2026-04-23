@@ -181,7 +181,7 @@ class LeilaoInfo(BaseModel):
 # ── Histórico ─────────────────────────────────────────────────────────────
 
 class HistoricoBusca(BaseModel):
-    nome_sala: str
+    codigo: str
     senha: str
 
 

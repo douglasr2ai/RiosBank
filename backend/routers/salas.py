@@ -383,6 +383,7 @@ async def _encerrar_sala_auto(sala: Sala, db: Session) -> dict:
 
     historico = HistoricoPartida(
         nome_sala=sala.nome,
+        codigo=sala.codigo,
         senha_hash=sala.senha_hash,
         link_token=sala.link_token,
         jogadores_count=len([j for j in sala.jogadores if j.status != "expulso"]),
