@@ -207,7 +207,6 @@
       </div>
     </div>
 
-    <InsolvenciaModal />
     <BottomNav :sala-id="salaId" />
   </div>
 </template>
@@ -220,7 +219,6 @@ import { usePartidaStore } from '../stores/partidaStore'
 import { useWsStore } from '../stores/wsStore'
 import { api } from '../stores/api'
 import BottomNav from '../components/BottomNav.vue'
-import InsolvenciaModal from '../components/InsolvenciaModal.vue'
 
 const route = useRoute()
 const router = useRouter()
