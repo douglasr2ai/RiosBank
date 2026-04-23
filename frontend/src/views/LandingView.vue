@@ -60,11 +60,11 @@
           <span>Gratuito</span>
           <span class="meta-dot">·</span>
           <span>Funciona no celular</span>
-          <template v-if="salasAbertas !== null">
+          <template v-if="jogadoresJogando !== null">
             <span class="meta-dot">·</span>
             <span class="meta-live">
               <span class="meta-live-dot" />
-              {{ salasAbertas }} sala{{ salasAbertas === 1 ? '' : 's' }} aberta{{ salasAbertas === 1 ? '' : 's' }}
+              {{ jogadoresJogando }} jogador{{ jogadoresJogando === 1 ? '' : 'es' }} jogando
             </span>
           </template>
         </div>
@@ -190,7 +190,7 @@ import { api } from '../stores/api'
 
 const headerHidden = ref(false)
 const openFaq = ref(null)
-const salasAbertas = ref(null)
+const jogadoresJogando = ref(null)
 let lastScrollY = 0
 
 function onScroll() {
@@ -205,7 +205,7 @@ function toggleFaq(i) {
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
-  api.get('/salas/stats').then(d => { salasAbertas.value = d.salas_abertas }).catch(() => {})
+  api.get('/salas/stats').then(d => { jogadoresJogando.value = d.jogadores_jogando }).catch(() => {})
 })
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
