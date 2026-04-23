@@ -273,7 +273,7 @@ async def expulsar_jogador(
 
     if sala.status == "em_andamento":
         ativos = [j for j in sala.jogadores if j.status == "ativo"]
-        if not ativos:
+        if len(ativos) <= 1:
             await _encerrar_sala_auto(sala, db)
 
     return {"ok": True}
@@ -311,12 +311,14 @@ async def sair_da_sala(sala_id: str, session_token: str, db: Session = Depends(g
     })
 
     ativos = [j for j in sala.jogadores if j.status == "ativo"]
-    if not ativos:
+    if len(ativos) <= 1:
         if sala.status == "em_andamento":
             await _encerrar_sala_auto(sala, db)
         elif sala.status == "lobby":
             sala.status = "encerrada"
             db.commit()
+            if ativos:  # 1 jogador restante — notificar para redirecionar
+                await manager.broadcast(sala_id, {"tipo": "sala_encerrada", "dados": {}})
 
     return {"ok": True}
 

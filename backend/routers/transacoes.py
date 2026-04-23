@@ -22,6 +22,17 @@ TIPOS_VALIDOS = {
 TIPOS_COM_INSOLVENCIA = {"aluguel", "transferencia", "leilao", "pagamento_banco"}
 
 
+async def _auto_encerrar_se_necessario(sala_id: str, db: Session):
+    """Encerra a partida se restar 0 ou 1 jogador ativo após falências."""
+    from routers.salas import _encerrar_sala_auto
+    sala = db.query(Sala).filter_by(id=sala_id).first()
+    if not sala or sala.status != "em_andamento":
+        return
+    ativos = [j for j in sala.jogadores if j.status == "ativo"]
+    if len(ativos) <= 1:
+        await _encerrar_sala_auto(sala, db)
+
+
 def _liquidar_forcado(
     devedor: Jogador,
     valor_divida: int,
@@ -318,14 +329,34 @@ def _resolve_transacao(transacao: Transacao, db: Session) -> tuple:
 def _check_resultado_votos(transacao: Transacao, db: Session) -> Optional[str]:
     """Retorna 'aprovada', 'reprovada' ou None se ainda indeciso."""
     if transacao.tipo == "negociacao":
-        # Só o destinatário vota
         if not transacao.destino_id:
             return "aprovada"
         votos = db.query(Voto).filter_by(transacao_id=transacao.id).all()
-        for v in votos:
-            if v.jogador_id == transacao.destino_id:
-                return v.voto  # "aprovado" ou "reprovado"
-        return None  # ainda aguardando
+        votos_dict = {v.jogador_id: v.voto for v in votos}
+
+        # Fase 1: destino ainda não votou
+        if transacao.destino_id not in votos_dict:
+            return None
+
+        if votos_dict[transacao.destino_id] == "reprovado":
+            return "reprovada"
+
+        # Fase 2: destino aceitou — verificar demais jogadores ativos
+        sala = db.query(Sala).filter_by(id=transacao.sala_id).first()
+        outros = [
+            j for j in sala.jogadores
+            if j.status == "ativo"
+            and j.id != transacao.origem_id
+            and j.id != transacao.destino_id
+        ]
+        if not outros:
+            return "aprovada"
+        for j in outros:
+            if j.id not in votos_dict:
+                return None
+            if votos_dict[j.id] == "reprovado":
+                return "reprovada"
+        return "aprovada"
 
     sala = db.query(Sala).filter_by(id=transacao.sala_id).first()
     votantes_ids = [
@@ -476,6 +507,8 @@ async def criar_transacao(body: TransacaoCreate, db: Session = Depends(get_db)):
             falidos, aviso = _resolve_transacao(transacao, db)
             db.commit()
             await _broadcast_resultado(body.sala_id, transacao.id, transacao.status, aviso, falidos)
+            if falidos:
+                await _auto_encerrar_se_necessario(body.sala_id, db)
         else:
             await manager.broadcast(body.sala_id, {
                 "tipo": "aprovacao_solicitada",
@@ -511,7 +544,12 @@ async def votar(transacao_id: str, body: VotoCreate, db: Session = Depends(get_d
         if jogador.id == transacao.origem_id:
             raise HTTPException(status_code=400, detail="Você não pode votar na própria negociação")
         if jogador.id != transacao.destino_id:
-            raise HTTPException(status_code=400, detail="Apenas o destinatário pode aceitar ou rejeitar")
+            # Outros só podem votar após destino aceitar
+            voto_destino = db.query(Voto).filter_by(
+                transacao_id=transacao_id, jogador_id=transacao.destino_id
+            ).first()
+            if not voto_destino or voto_destino.voto != "aprovado":
+                raise HTTPException(status_code=400, detail="Aguardando o destinatário aceitar primeiro")
     else:
         if jogador.id in (transacao.origem_id, transacao.destino_id):
             raise HTTPException(status_code=400, detail="Você não pode votar na própria transação")
@@ -537,8 +575,22 @@ async def votar(transacao_id: str, body: VotoCreate, db: Session = Depends(get_d
 
     db.commit()
 
+    negociacao_fase2 = (
+        transacao.tipo == "negociacao"
+        and jogador.id == transacao.destino_id
+        and body.voto == "aprovado"
+        and resultado is None
+    )
+
     if resultado:
         await _broadcast_resultado(transacao.sala_id, transacao_id, transacao.status, aviso, falidos)
+        if falidos:
+            await _auto_encerrar_se_necessario(transacao.sala_id, db)
+    elif negociacao_fase2:
+        await manager.broadcast(transacao.sala_id, {
+            "tipo": "negociacao_destinatario_aceitou",
+            "dados": {"transacao_id": transacao_id},
+        })
     else:
         await manager.broadcast(transacao.sala_id, {
             "tipo": "transacao_voto_registrado",
@@ -584,6 +636,8 @@ async def resolver_por_timeout(transacao_id: str, session_token: str, db: Sessio
     db.commit()
 
     await _broadcast_resultado(transacao.sala_id, transacao_id, transacao.status, aviso, falidos)
+    if falidos:
+        await _auto_encerrar_se_necessario(transacao.sala_id, db)
     return {"status": transacao.status}
 
 

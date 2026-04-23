@@ -76,6 +76,12 @@ export const usePartidaStore = defineStore('partida', () => {
     }
   }
 
+  function marcarNegociacaoAceita(transacaoId) {
+    if (aprovacaoPendente.value?.transacao_id === transacaoId) {
+      aprovacaoPendente.value = { ...aprovacaoPendente.value, destinatario_aceitou: true }
+    }
+  }
+
   function clearAprovacao() {
     aprovacaoPendente.value = null
   }
@@ -141,7 +147,7 @@ export const usePartidaStore = defineStore('partida', () => {
     sala, jogadores, posses, transacoes, aprovacaoPendente, leilaoAtivo,
     insolvenciaAviso, liquidacaoInfo,
     jogadoresAtivos, possesDe, propriedadesDisponiveis,
-    setSala, addTransacao, updateJogador, upsertJogador, setAprovacaoPendente, registrarVoto, clearAprovacao,
+    setSala, addTransacao, updateJogador, upsertJogador, setAprovacaoPendente, registrarVoto, marcarNegociacaoAceita, clearAprovacao,
     setLeilaoAtivo, clearLeilao, updatePosse,
     setInsolvenciaAviso, setLiquidacaoInfo, clearInsolvencia,
     carregarSala, carregarPropriedades, carregarTransacoes, clear,

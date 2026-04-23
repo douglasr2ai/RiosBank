@@ -73,23 +73,47 @@
             </svg>
             <span class="timer-num mono">{{ timer }}</span>
           </div>
-          <div class="negoc-aguardando-txt">
-            <template v-if="podeVotar && !jaVotei">Aceite ou rejeite esta proposta</template>
-            <template v-else-if="podeVotar && jaVotei">Resposta registrada</template>
-            <template v-else-if="jogador.id === dados.origem_id">Aguardando resposta de {{ nomeJogador(dados.destino_id) }}...</template>
-            <template v-else>Negociação em andamento — apenas {{ nomeJogador(dados.destino_id) }} pode aceitar ou rejeitar</template>
+
+          <!-- Fase 2: avatares dos outros votantes -->
+          <div v-if="dados.destinatario_aceitou && votantes.length" class="voters">
+            <div
+              v-for="v in votantes"
+              :key="v.id"
+              class="voter-avatar"
+              :class="{ 'va-aprovado': v.voto === 'aprovado', 'va-reprovado': v.voto === 'reprovado' }"
+              :title="v.nome"
+            >{{ v.nome[0].toUpperCase() }}</div>
+          </div>
+
+          <!-- Fase 1 ou sem outros para votar -->
+          <div v-else class="negoc-aguardando-txt">
+            <template v-if="!dados.destinatario_aceitou">
+              <template v-if="jogador.id === dados.destino_id && !jaVotei">Aceite ou rejeite esta proposta</template>
+              <template v-else-if="jogador.id === dados.destino_id && jaVotei">Resposta registrada</template>
+              <template v-else-if="jogador.id === dados.origem_id">Aguardando resposta de {{ nomeJogador(dados.destino_id) }}...</template>
+              <template v-else>Apenas {{ nomeJogador(dados.destino_id) }} pode aceitar ou rejeitar</template>
+            </template>
+            <template v-else>
+              Aguardando aprovação dos demais jogadores...
+            </template>
           </div>
         </div>
 
+        <p v-if="dados.destinatario_aceitou" class="hint-text text-muted">Sem voto = aprovação automática</p>
+
         <div v-if="podeVotar && !jaVotei" class="btn-row">
-          <button class="btn btn-danger" @click="votar('reprovado')">Rejeitar</button>
-          <button class="btn btn-green" @click="votar('aprovado')">Aceitar</button>
+          <button class="btn btn-danger" @click="votar('reprovado')">
+            {{ jogador.id === dados.destino_id ? 'Rejeitar' : 'Reprovar' }}
+          </button>
+          <button class="btn btn-green" @click="votar('aprovado')">
+            {{ jogador.id === dados.destino_id ? 'Aceitar' : 'Aprovar' }}
+          </button>
         </div>
         <div v-else-if="podeVotar && jaVotei" class="voto-confirmado">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
-          Resposta enviada
+          {{ dados.destinatario_aceitou && jogador.id === dados.destino_id ? 'Proposta aceita · aguardando os demais' : 'Resposta enviada' }}
         </div>
       </template>
 
@@ -175,8 +199,14 @@ const jaVotei = ref(false)
 let interval = null
 
 const votantes = computed(() => {
-  if (dados.value?.tipo === 'negociacao') return []  // só destinatário vota, não exibe lista
   const votos = dados.value?.votos || {}
+  if (dados.value?.tipo === 'negociacao') {
+    // Fase 2: exibe outros jogadores (não origem, não destino) após destino aceitar
+    if (!dados.value.destinatario_aceitou) return []
+    return partida.jogadoresAtivos
+      .filter(j => j.id !== dados.value.origem_id && j.id !== dados.value.destino_id)
+      .map(j => ({ ...j, voto: votos[j.id] ?? null }))
+  }
   return partida.jogadoresAtivos
     .filter(j => j.id !== dados.value?.origem_id && j.id !== dados.value?.destino_id)
     .map(j => ({ ...j, voto: votos[j.id] ?? null }))
@@ -185,7 +215,10 @@ const votantes = computed(() => {
 const podeVotar = computed(() => {
   if (!dados.value) return false
   if (dados.value.tipo === 'negociacao') {
-    return jogador.id === dados.value.destino_id
+    if (jogador.id === dados.value.destino_id) return true
+    if (jogador.id === dados.value.origem_id) return false
+    // Outros podem votar apenas após destino aceitar (fase 2)
+    return !!dados.value.destinatario_aceitou
   }
   return jogador.id !== dados.value.origem_id && jogador.id !== dados.value.destino_id
 })

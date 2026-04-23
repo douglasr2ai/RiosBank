@@ -103,6 +103,18 @@ export const useWsStore = defineStore('ws', () => {
         partida.registrarVoto(msg.dados.jogador_id, msg.dados.voto)
         break
 
+      case 'negociacao_destinatario_aceitou':
+        partida.marcarNegociacaoAceita(msg.dados.transacao_id)
+        break
+
+      case 'sala_encerrada':
+        // Lobby fechado por falta de jogadores
+        jogador.clear()
+        partida.clear()
+        disconnect()
+        router.push({ name: 'entrar' })
+        break
+
       case 'transacao_aprovada':
       case 'transacao_reprovada':
       case 'transacao_estornada': {
