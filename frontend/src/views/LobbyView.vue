@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useJogadorStore } from '../stores/jogadorStore'
 import { usePartidaStore } from '../stores/partidaStore'
@@ -99,6 +99,7 @@ const toast = useToastStore()
 
 const loading = ref(false)
 const copiado = ref(false)
+let pollInterval = null
 
 const salaInfo = computed(() => partida.sala)
 const jogadores = computed(() => partida.jogadores.filter(j => j.status !== 'expulso'))
@@ -144,10 +145,11 @@ async function sair() {
 }
 
 onMounted(async () => {
-  if (!partida.sala) {
-    await partida.carregarSala(route.params.salaId)
-  }
+  await partida.carregarSala(route.params.salaId)
+  pollInterval = setInterval(() => partida.carregarSala(route.params.salaId), 3000)
 })
+
+onUnmounted(() => clearInterval(pollInterval))
 </script>
 
 <style scoped>

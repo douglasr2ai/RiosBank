@@ -23,6 +23,8 @@ export const useWsStore = defineStore('ws', () => {
       pingInterval = setInterval(() => {
         if (ws?.readyState === WebSocket.OPEN) ws.send('ping')
       }, 25_000)
+      // Re-sincroniza estado ao (re)conectar para não perder eventos perdidos
+      usePartidaStore().carregarSala(sala_id).catch(() => {})
     }
 
     ws.onclose = (e) => {

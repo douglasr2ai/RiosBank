@@ -196,11 +196,9 @@
           </select>
         </div>
 
-        <div class="field">
-          <label>Valor (R$) — ajuste se necessário</label>
+        <div class="field" style="display:none">
           <div class="input-wrap">
-            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>
-            <input v-model.number="aForm.valor_reais" type="number" placeholder="0" min="1" />
+            <input v-model.number="aForm.valor_reais" type="number" />
           </div>
         </div>
 
@@ -353,8 +351,17 @@ async function enviarTransferencia() {
 }
 
 async function enviarAluguel() {
-  if (!aForm.value.destino_id || !aForm.value.valor_reais) {
-    aErro.value = 'Preencha todos os campos.'
+  if (!aForm.value.posse_id || !aForm.value.destino_id) {
+    aErro.value = 'Selecione o imóvel e o jogador.'
+    return
+  }
+  if (isAcao.value && !aForm.value.soma_dados) {
+    aErro.value = 'Informe a soma dos dados.'
+    return
+  }
+  const valor = aAluguelAuto.value
+  if (!valor) {
+    aErro.value = 'Valor de aluguel não calculado.'
     return
   }
   const nomeImovel = aPosseSelecionada.value?.propriedade?.nome
@@ -366,7 +373,7 @@ async function enviarAluguel() {
       sala_id: salaId.value,
       session_token: jogador.sessionToken,
       tipo: 'aluguel',
-      valor: Math.round(aForm.value.valor_reais * 100),
+      valor,
       destino_id: aForm.value.destino_id,
       descricao,
     })
