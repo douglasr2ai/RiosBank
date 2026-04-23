@@ -214,6 +214,12 @@ async def expulsar_jogador(
         "tipo": "jogador_expulso",
         "dados": {"jogador_id": jogador_id, "nome": alvo.nome},
     })
+
+    if sala.status == "em_andamento":
+        ativos = [j for j in sala.jogadores if j.status == "ativo"]
+        if not ativos:
+            await _encerrar_sala_auto(sala, db)
+
     return {"ok": True}
 
 
@@ -247,6 +253,15 @@ async def sair_da_sala(sala_id: str, session_token: str, db: Session = Depends(g
         "tipo": "jogador_expulso",
         "dados": {"jogador_id": jogador.id, "nome": jogador.nome},
     })
+
+    ativos = [j for j in sala.jogadores if j.status == "ativo"]
+    if not ativos:
+        if sala.status == "em_andamento":
+            await _encerrar_sala_auto(sala, db)
+        elif sala.status == "lobby":
+            sala.status = "encerrada"
+            db.commit()
+
     return {"ok": True}
 
 
