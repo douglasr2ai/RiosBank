@@ -49,6 +49,7 @@ class Jogador(Base):
     saldo = Column(Integer, nullable=False, default=0)
     status = Column(String, nullable=False, default="ativo")  # ativo | falido | expulso
     ordem_entrada = Column(Integer, nullable=False, default=0)
+    avisos_cobranca = Column(Integer, nullable=False, default=0)
     criado_em = Column(DateTime, default=now_utc)
 
     sala = relationship("Sala", foreign_keys=[sala_id], back_populates="jogadores")
