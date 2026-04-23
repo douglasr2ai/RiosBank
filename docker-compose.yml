@@ -14,15 +14,18 @@ services:
     working_dir: /app
     volumes:
       - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev -- --host"
     environment:
       - VITE_API_URL=http://localhost:8000
       - VITE_WS_URL=ws://localhost:8000
-      - CI=true
     stdin_open: true
     tty: true
     restart: unless-stopped
     depends_on:
       - backend
+
+volumes:
+  frontend_node_modules:
