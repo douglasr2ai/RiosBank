@@ -51,14 +51,19 @@ def _liquidar_forcado(
         }
 
         if posse.hipotecada:
-            # Credor assume a propriedade hipotecada (com casas intactas) pelo valor da hipoteca + 20%
-            custo_assumir = int(prop.valor_hipoteca * 1.2)
-            posse.jogador_id = credor.id if credor else None
             if credor:
+                # Credor assume a propriedade hipotecada (com casas intactas) pelo valor da hipoteca + 20%
+                custo_assumir = int(prop.valor_hipoteca * 1.2)
+                posse.jogador_id = credor.id
                 credor.saldo -= custo_assumir
-            devedor.saldo += custo_assumir
-            item["valor_abatido"] = custo_assumir
-            item["transferida_para"] = credor.nome if credor else "Banco"
+                devedor.saldo += custo_assumir
+                item["valor_abatido"] = custo_assumir
+                item["transferida_para"] = credor.nome
+            else:
+                # Banco recupera a propriedade hipotecada sem pagamento adicional
+                posse.jogador_id = None
+                item["valor_abatido"] = 0
+                item["transferida_para"] = "Banco"
         else:
             valor_abatido = 0
             if posse.tem_hotel:
@@ -78,8 +83,9 @@ def _liquidar_forcado(
                 if sala:
                     sala.casas_disponiveis += posse.num_casas
                 posse.num_casas = 0
-            devedor.saldo += prop.valor_compra
-            valor_abatido += prop.valor_compra
+            # Imóvel vendido ao banco pelo valor de hipoteca (metade do valor de compra)
+            devedor.saldo += prop.valor_hipoteca
+            valor_abatido += prop.valor_hipoteca
             item["valor_abatido"] = valor_abatido
             posse.jogador_id = None
 

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, Base, SessionLocal
@@ -41,10 +42,20 @@ async def _tarefa_encerramento_inativo():
             db.close()
 
 
+def _aplicar_migrations():
+    """Aplica colunas novas em bancos já existentes (create_all não altera tabelas)."""
+    with engine.connect() as conn:
+        colunas = {row[1] for row in conn.execute(text("PRAGMA table_info(jogadores)"))}
+        if "avisos_cobranca" not in colunas:
+            conn.execute(text("ALTER TABLE jogadores ADD COLUMN avisos_cobranca INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs("data", exist_ok=True)
     Base.metadata.create_all(bind=engine)
+    _aplicar_migrations()
     db = next(get_db())
     try:
         seed_propriedades(db)

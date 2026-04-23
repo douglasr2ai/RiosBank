@@ -98,12 +98,11 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { usePartidaStore } from '../stores/partidaStore'
 import { useJogadorStore } from '../stores/jogadorStore'
 
 const router = useRouter()
-const route = useRoute()
 const partida = usePartidaStore()
 const jogador = useJogadorStore()
 
@@ -124,9 +123,9 @@ function fechar() {
 }
 
 function verPropriedades() {
+  const salaId = partida.sala?.id
   partida.clearInsolvencia()
-  const salaId = route.params.salaId
-  router.push({ name: 'propriedades', params: { salaId } })
+  if (salaId) router.push({ name: 'propriedades', params: { salaId } })
 }
 </script>
 

@@ -121,6 +121,7 @@ export const useWsStore = defineStore('ws', () => {
 
       case 'jogador_falido':
         partida.updateJogador(msg.dados.jogador_id, { status: 'falido' })
+        if (msg.dados.jogador_id === jogador.id) partida.clearInsolvencia()
         break
 
       case 'devedor_insolvente':
