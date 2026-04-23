@@ -19,6 +19,12 @@ class SalaBusca(BaseModel):
     nome_jogador: str
 
 
+class SalaEntrarPorCodigo(BaseModel):
+    codigo: str
+    senha: str
+    nome_jogador: str
+
+
 class JoinByLink(BaseModel):
     link_token: str
     nome_jogador: str

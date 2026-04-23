@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Sala, Jogador, PossePropriedade, Propriedade, HistoricoPartida, Transacao
 from schemas import (
-    SalaCreate, SalaBusca, JoinByLink, EntrarSalaResponse,
+    SalaCreate, SalaBusca, SalaEntrarPorCodigo, JoinByLink, EntrarSalaResponse,
     SalaInfo, JogadorDetalhado,
 )
 from seed import SALDO_INICIAL
@@ -17,10 +18,22 @@ router = APIRouter(prefix="/salas", tags=["salas"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _gerar_codigo_unico(db: Session) -> str:
+    for _ in range(20):
+        codigo = f"{random.randint(0, 999999):06d}"
+        existente = db.query(Sala).filter(
+            Sala.codigo == codigo, Sala.status != "encerrada"
+        ).first()
+        if not existente:
+            return codigo
+    raise HTTPException(status_code=500, detail="Não foi possível gerar código único")
+
+
 def _sala_info(sala: Sala) -> dict:
     return {
         "id": sala.id,
         "nome": sala.nome,
+        "codigo": sala.codigo,
         "link_token": sala.link_token,
         "status": sala.status,
         "versao_jogo": sala.versao_jogo,
@@ -66,6 +79,7 @@ def criar_sala(body: SalaCreate, db: Session = Depends(get_db)):
         nome=body.nome,
         senha_hash=pwd_context.hash(body.senha),
         versao_jogo=body.versao_jogo,
+        codigo=_gerar_codigo_unico(db),
     )
     db.add(sala)
     db.flush()
@@ -147,8 +161,42 @@ def entrar_por_link(link_token: str, body: JoinByLink, db: Session = Depends(get
 
 @router.get("/stats")
 def stats_salas(db: Session = Depends(get_db)):
-    abertas = db.query(Sala).filter(Sala.status.in_(["lobby", "em_andamento"])).count()
-    return {"salas_abertas": abertas}
+    jogando = (
+        db.query(Jogador)
+        .join(Sala, Jogador.sala_id == Sala.id)
+        .filter(Sala.status == "em_andamento", Jogador.status == "ativo")
+        .count()
+    )
+    return {"jogadores_jogando": jogando}
+
+
+# ── Entrar por código + senha ─────────────────────────────────────────────
+
+@router.post("/entrar")
+def entrar_por_codigo(body: SalaEntrarPorCodigo, db: Session = Depends(get_db)):
+    sala = db.query(Sala).filter(
+        Sala.codigo == body.codigo.strip(),
+        Sala.status != "encerrada",
+    ).first()
+    if not sala or not pwd_context.verify(body.senha, sala.senha_hash):
+        raise HTTPException(status_code=404, detail="Código ou senha inválidos")
+
+    jogador = _criar_jogador(db, sala, body.nome_jogador)
+    db.commit()
+    db.refresh(sala)
+    db.refresh(jogador)
+
+    return {
+        "sala": _sala_info(sala),
+        "jogador": {
+            "id": jogador.id,
+            "nome": jogador.nome,
+            "saldo": jogador.saldo,
+            "status": jogador.status,
+            "ordem_entrada": jogador.ordem_entrada,
+            "session_token": jogador.session_token,
+        },
+    }
 
 
 # ── Info da sala ──────────────────────────────────────────────────────────

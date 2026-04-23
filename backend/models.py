@@ -27,6 +27,7 @@ class Sala(Base):
     casas_disponiveis = Column(Integer, nullable=False, default=32)
     hoteis_disponiveis = Column(Integer, nullable=False, default=12)
     versao_jogo = Column(String, nullable=False, default="super_banco_imobiliario")
+    codigo = Column(String(6), nullable=True, unique=False)
     criada_em = Column(DateTime, default=now_utc)
     encerrada_em = Column(DateTime, nullable=True)
     ultima_atividade = Column(DateTime, nullable=True)

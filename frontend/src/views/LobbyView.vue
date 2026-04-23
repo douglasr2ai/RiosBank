@@ -9,6 +9,20 @@
         </div>
       </div>
 
+      <!-- Código da sala -->
+      <div class="glass codigo-card">
+        <div class="codigo-info">
+          <p class="link-label text-muted">Código da sala</p>
+          <p class="codigo-val mono">{{ codigoFormatado }}</p>
+        </div>
+        <button class="copy-btn" @click="copiarCodigo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+          {{ copiadoCodigo ? 'Copiado!' : 'Copiar' }}
+        </button>
+      </div>
+
       <!-- Copiar link -->
       <div class="glass link-card">
         <div class="link-info">
@@ -63,7 +77,7 @@
           <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
         </svg>
         <p class="aviso-text">
-          Guarde o link de convite ou a senha da sala. Após a partida, eles dão acesso ao histórico e ao resultado final.
+          Guarde o código ou o link de convite. Após a partida, eles dão acesso ao histórico e ao resultado final.
         </p>
       </div>
 
@@ -99,6 +113,7 @@ const toast = useToastStore()
 
 const loading = ref(false)
 const copiado = ref(false)
+const copiadoCodigo = ref(false)
 let pollInterval = null
 
 const salaInfo = computed(() => partida.sala)
@@ -115,11 +130,25 @@ const linkCurto = computed(() => {
   return `${base}/join/${salaInfo.value.link_token}`
 })
 
+const codigoFormatado = computed(() => {
+  const c = salaInfo.value?.codigo
+  if (!c) return '——————'
+  return `${c.slice(0, 3)} ${c.slice(3)}`
+})
+
 async function copiarLink() {
   try {
     await navigator.clipboard.writeText(linkCurto.value)
     copiado.value = true
     setTimeout(() => (copiado.value = false), 2000)
+  } catch {}
+}
+
+async function copiarCodigo() {
+  try {
+    await navigator.clipboard.writeText(salaInfo.value?.codigo || '')
+    copiadoCodigo.value = true
+    setTimeout(() => (copiadoCodigo.value = false), 2000)
   } catch {}
 }
 
@@ -179,6 +208,18 @@ onUnmounted(() => clearInterval(pollInterval))
 }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.codigo-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-color: rgba(46,204,113,.2) !important;
+  background: rgba(46,204,113,.04) !important;
+}
+.codigo-info { flex: 1; min-width: 0; }
+.codigo-val {
+  font-size: 28px; font-weight: 800; letter-spacing: .12em;
+  color: var(--green); margin-top: 2px;
+}
 
 .link-card {
   display: flex; align-items: center; gap: 12px;

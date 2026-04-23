@@ -13,9 +13,9 @@
       <div class="brand-block">
         <div class="brand">Rios<span>Bank</span></div>
         <p class="tagline">Controle financeiro preciso para o seu tabuleiro.</p>
-        <div v-if="salasAbertas !== null" class="salas-pill">
+        <div v-if="jogadoresJogando !== null" class="salas-pill">
           <span class="pill-dot" />
-          {{ salasAbertas === 0 ? 'Nenhuma sala aberta agora' : `${salasAbertas} sala${salasAbertas === 1 ? '' : 's'} aberta${salasAbertas === 1 ? '' : 's'} agora` }}
+          {{ jogadoresJogando === 0 ? 'Nenhum jogador ativo agora' : `${jogadoresJogando} jogador${jogadoresJogando === 1 ? '' : 'es'} jogando agora` }}
         </div>
       </div>
 
@@ -52,14 +52,14 @@
         <h2 class="card-title">Entrar em uma sala</h2>
 
         <div class="field">
-          <label>Nome da sala</label>
+          <label>Código da sala</label>
           <div class="input-wrap">
             <span class="input-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
             </span>
-            <input v-model="nomeSala" type="text" placeholder="Ex: Sala da Família" />
+            <input v-model="codigoSala" type="text" inputmode="numeric" maxlength="6" placeholder="000000" class="mono" />
           </div>
         </div>
 
@@ -131,12 +131,12 @@ const jogador = useJogadorStore()
 const partida = usePartidaStore()
 const ws = useWsStore()
 
-const nomeSala = ref('')
+const codigoSala = ref('')
 const senha = ref('')
 const nomeJogador = ref('')
 const loading = ref(false)
 const erro = ref('')
-const salasAbertas = ref(null)
+const jogadoresJogando = ref(null)
 
 const linkToken = computed(() =>
   route.name === 'join' ? route.params.linkToken : null
@@ -146,7 +146,7 @@ onMounted(async () => {
   if (linkToken.value && jogador.nome) nomeJogador.value = jogador.nome
   try {
     const data = await api.get('/salas/stats')
-    salasAbertas.value = data.salas_abertas
+    jogadoresJogando.value = data.jogadores_jogando
   } catch {}
 })
 
@@ -171,15 +171,15 @@ async function entrarPorLink() {
 }
 
 async function entrar() {
-  if (!nomeSala.value.trim() || !nomeJogador.value.trim()) {
-    erro.value = 'Preencha o nome da sala e o seu apelido.'
+  if (!codigoSala.value.trim() || !nomeJogador.value.trim()) {
+    erro.value = 'Preencha o código da sala e o seu apelido.'
     return
   }
   erro.value = ''
   loading.value = true
   try {
-    const data = await api.post('/salas/busca', {
-      nome: nomeSala.value.trim(),
+    const data = await api.post('/salas/entrar', {
+      codigo: codigoSala.value.trim(),
       senha: senha.value,
       nome_jogador: nomeJogador.value.trim(),
     })

@@ -54,6 +54,9 @@ def _aplicar_migrations():
         if "ultima_atividade" not in cols_salas:
             conn.execute(text("ALTER TABLE salas ADD COLUMN ultima_atividade DATETIME"))
             conn.commit()
+        if "codigo" not in cols_salas:
+            conn.execute(text("ALTER TABLE salas ADD COLUMN codigo VARCHAR(6)"))
+            conn.commit()
 
 
 @asynccontextmanager
