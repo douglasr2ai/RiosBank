@@ -60,6 +60,13 @@
           <span>Gratuito</span>
           <span class="meta-dot">·</span>
           <span>Funciona no celular</span>
+          <template v-if="salasAbertas !== null">
+            <span class="meta-dot">·</span>
+            <span class="meta-live">
+              <span class="meta-live-dot" />
+              {{ salasAbertas }} sala{{ salasAbertas === 1 ? '' : 's' }} aberta{{ salasAbertas === 1 ? '' : 's' }}
+            </span>
+          </template>
         </div>
 
         <!-- Card visual decorativo -->
@@ -179,9 +186,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { api } from '../stores/api'
 
 const headerHidden = ref(false)
 const openFaq = ref(null)
+const salasAbertas = ref(null)
 let lastScrollY = 0
 
 function onScroll() {
@@ -194,7 +203,10 @@ function toggleFaq(i) {
   openFaq.value = openFaq.value === i ? null : i
 }
 
-onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true })
+  api.get('/salas/stats').then(d => { salasAbertas.value = d.salas_abertas }).catch(() => {})
+})
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 const steps = [
@@ -397,6 +409,17 @@ const faqs = [
   animation: fadeInUp .6s .35s ease both;
 }
 .meta-dot { opacity: .4; }
+
+.meta-live { display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-weight: 700; }
+.meta-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-live 2s ease-in-out infinite;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
 
 /* Hero card decorativo */
 .hero-card {

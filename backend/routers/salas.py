@@ -143,6 +143,14 @@ def entrar_por_link(link_token: str, body: JoinByLink, db: Session = Depends(get
     }
 
 
+# ── Estatísticas públicas ─────────────────────────────────────────────────
+
+@router.get("/stats")
+def stats_salas(db: Session = Depends(get_db)):
+    abertas = db.query(Sala).filter(Sala.status.in_(["lobby", "em_andamento"])).count()
+    return {"salas_abertas": abertas}
+
+
 # ── Info da sala ──────────────────────────────────────────────────────────
 
 @router.get("/{sala_id}")

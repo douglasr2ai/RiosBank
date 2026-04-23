@@ -13,6 +13,10 @@
       <div class="brand-block">
         <div class="brand">Rios<span>Bank</span></div>
         <p class="tagline">Controle financeiro preciso para o seu tabuleiro.</p>
+        <div v-if="salasAbertas !== null" class="salas-pill">
+          <span class="pill-dot" />
+          {{ salasAbertas === 0 ? 'Nenhuma sala aberta agora' : `${salasAbertas} sala${salasAbertas === 1 ? '' : 's'} aberta${salasAbertas === 1 ? '' : 's'} agora` }}
+        </div>
       </div>
 
       <!-- Entrar via link de convite -->
@@ -132,13 +136,18 @@ const senha = ref('')
 const nomeJogador = ref('')
 const loading = ref(false)
 const erro = ref('')
+const salasAbertas = ref(null)
 
 const linkToken = computed(() =>
   route.name === 'join' ? route.params.linkToken : null
 )
 
-onMounted(() => {
+onMounted(async () => {
   if (linkToken.value && jogador.nome) nomeJogador.value = jogador.nome
+  try {
+    const data = await api.get('/salas/stats')
+    salasAbertas.value = data.salas_abertas
+  } catch {}
 })
 
 async function entrarPorLink() {
@@ -227,6 +236,26 @@ async function entrarNaSala(data) {
 .brand { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
 .brand span { color: var(--green); }
 .tagline { font-size: 13px; color: var(--text-2); margin-top: 5px; }
+
+.salas-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 10px;
+  font-size: 11px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .04em;
+  color: var(--green);
+  background: var(--green-dim); border: 1px solid rgba(46,204,113,.2);
+  border-radius: 999px; padding: 4px 12px;
+}
+.pill-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
 
 .card { padding: 22px; display: flex; flex-direction: column; gap: 12px; }
 .card-title { font-size: 16px; font-weight: 700; }
