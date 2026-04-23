@@ -45,9 +45,14 @@ async def _tarefa_encerramento_inativo():
 def _aplicar_migrations():
     """Aplica colunas novas em bancos já existentes (create_all não altera tabelas)."""
     with engine.connect() as conn:
-        colunas = {row[1] for row in conn.execute(text("PRAGMA table_info(jogadores)"))}
-        if "avisos_cobranca" not in colunas:
+        cols_jogadores = {row[1] for row in conn.execute(text("PRAGMA table_info(jogadores)"))}
+        if "avisos_cobranca" not in cols_jogadores:
             conn.execute(text("ALTER TABLE jogadores ADD COLUMN avisos_cobranca INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+
+        cols_salas = {row[1] for row in conn.execute(text("PRAGMA table_info(salas)"))}
+        if "ultima_atividade" not in cols_salas:
+            conn.execute(text("ALTER TABLE salas ADD COLUMN ultima_atividade DATETIME"))
             conn.commit()
 
 
