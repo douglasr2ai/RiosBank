@@ -250,28 +250,16 @@ async def sair_da_sala(sala_id: str, session_token: str, db: Session = Depends(g
     return {"ok": True}
 
 
-# ── Encerrar partida (host) ───────────────────────────────────────────────
+# ── Encerramento (lógica compartilhada) ──────────────────────────────────
 
-@router.post("/{sala_id}/encerrar")
-async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depends(get_db)):
-    sala = db.query(Sala).filter_by(id=sala_id).first()
-    if not sala:
-        raise HTTPException(status_code=404, detail="Sala não encontrada")
-
-    host = db.query(Jogador).filter_by(id=sala.host_jogador_id).first()
-    if not host or host.session_token != session_token:
-        raise HTTPException(status_code=403, detail="Apenas o host pode encerrar")
-
-    if sala.status != "em_andamento":
-        raise HTTPException(status_code=400, detail="Partida não está em andamento")
-
+async def _encerrar_sala_auto(sala: Sala, db: Session) -> dict:
+    """Liquida propriedades, grava histórico e faz broadcast de encerramento."""
     agora = datetime.now(timezone.utc)
     sala.status = "encerrada"
     sala.encerrada_em = agora
 
-    # Liquidação automática
     ativos = [j for j in sala.jogadores if j.status in ("ativo", "falido")]
-    posses = db.query(PossePropriedade).filter_by(sala_id=sala_id).all()
+    posses = db.query(PossePropriedade).filter_by(sala_id=sala.id).all()
 
     for posse in posses:
         if posse.jogador_id is None:
@@ -280,12 +268,10 @@ async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depen
         if not dono:
             continue
         prop = posse.propriedade
-
         if posse.hipotecada:
             custo_resgate = int(prop.valor_hipoteca * 1.2)
             if dono.saldo >= custo_resgate:
                 dono.saldo -= custo_resgate
-            # Se não puder pagar, volta ao banco (sem nenhum valor)
         else:
             if posse.tem_hotel:
                 dono.saldo += (prop.custo_hotel or 0) // 2
@@ -293,9 +279,8 @@ async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depen
                 dono.saldo += ((prop.custo_casa or 0) * posse.num_casas) // 2
             dono.saldo += prop.valor_compra
 
-    # Ranking final
     ranking_jogadores = sorted(
-        [j for j in sala.jogadores if j.status not in ("expulso",)],
+        [j for j in sala.jogadores if j.status != "expulso"],
         key=lambda j: j.saldo,
         reverse=True,
     )
@@ -314,18 +299,11 @@ async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depen
         return resultado
 
     ranking_json = [
-        {
-            "posicao": i + 1,
-            "nome": j.nome,
-            "saldo_final": j.saldo,
-            "propriedades": _prop_list(j.id),
-        }
+        {"posicao": i + 1, "nome": j.nome, "saldo_final": j.saldo, "propriedades": _prop_list(j.id)}
         for i, j in enumerate(ranking_jogadores)
     ]
 
-    total_transacoes = db.query(Transacao).filter_by(
-        sala_id=sala_id, status="aprovada"
-    ).count()
+    total_transacoes = db.query(Transacao).filter_by(sala_id=sala.id, status="aprovada").count()
 
     iniciada_em = sala.criada_em
     if iniciada_em and iniciada_em.tzinfo is None:
@@ -347,11 +325,26 @@ async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depen
     db.add(historico)
     db.commit()
 
-    await manager.broadcast(sala_id, {
+    await manager.broadcast(sala.id, {
         "tipo": "partida_encerrada",
-        "dados": {
-            "link_token": sala.link_token,
-            "ranking": ranking_json,
-        },
+        "dados": {"link_token": sala.link_token, "ranking": ranking_json},
     })
     return {"link_token": sala.link_token, "ranking": ranking_json}
+
+
+# ── Encerrar partida (host) ───────────────────────────────────────────────
+
+@router.post("/{sala_id}/encerrar")
+async def encerrar_partida(sala_id: str, session_token: str, db: Session = Depends(get_db)):
+    sala = db.query(Sala).filter_by(id=sala_id).first()
+    if not sala:
+        raise HTTPException(status_code=404, detail="Sala não encontrada")
+
+    host = db.query(Jogador).filter_by(id=sala.host_jogador_id).first()
+    if not host or host.session_token != session_token:
+        raise HTTPException(status_code=403, detail="Apenas o host pode encerrar")
+
+    if sala.status != "em_andamento":
+        raise HTTPException(status_code=400, detail="Partida não está em andamento")
+
+    return await _encerrar_sala_auto(sala, db)
