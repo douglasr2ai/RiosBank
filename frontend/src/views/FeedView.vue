@@ -116,6 +116,22 @@ const iconClass = (t) => {
 }
 
 const feedTexto = (t) => {
+  if (t.tipo === 'negociacao') {
+    try {
+      const nd = JSON.parse(t.descricao || '{}')
+      const envia = []
+      if (nd.dinheiro_enviado > 0) envia.push(`<span class="val">${formatMoney(nd.dinheiro_enviado)}</span>`)
+      if (nd.propriedades_enviadas?.length) envia.push(`${nd.propriedades_enviadas.length} imóvel(is)`)
+      const recebe = []
+      if (nd.dinheiro_recebido > 0) recebe.push(`<span class="val">${formatMoney(nd.dinheiro_recebido)}</span>`)
+      if (nd.propriedades_recebidas?.length) recebe.push(`${nd.propriedades_recebidas.length} imóvel(is)`)
+      const oferta = envia.length ? envia.join(' + ') : '—'
+      const pedido = recebe.length ? recebe.join(' + ') : '—'
+      return `<b>${nomeJog(t.origem_id)}</b> negociou com <b>${nomeJog(t.destino_id)}</b> · enviou ${oferta} por ${pedido}`
+    } catch {
+      return `<b>${nomeJog(t.origem_id)}</b> negociou com <b>${nomeJog(t.destino_id)}</b>`
+    }
+  }
   if (t.descricao) return t.descricao
   const mapa = {
     transferencia: `<b>${nomeJog(t.origem_id)}</b> transferiu <span class="val">${formatMoney(t.valor)}</span> para <b>${nomeJog(t.destino_id)}</b>`,
@@ -159,8 +175,9 @@ const extratoDescricao = (t) => {
     estorno: `Estorno`,
     falencia: `Falência`,
     pagamento_banco: isEntrada(t) ? `Recebimento do banco` : `Pagamento ao banco`,
+    negociacao: isEntrada(t) ? `Negociação com ${outro}` : `Negociação com ${outro}`,
   }
-  return mapa[t.tipo] || (t.descricao || t.tipo)
+  return mapa[t.tipo] || t.tipo
 }
 
 // ── Agrupamento por tempo ──

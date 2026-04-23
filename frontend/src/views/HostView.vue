@@ -135,6 +135,7 @@ const nomeJog = (id) => {
 }
 
 const descricao = (t) => {
+  if (t.tipo === 'negociacao') return `${nomeJog(t.origem_id)} negociou com ${nomeJog(t.destino_id)}`
   if (t.descricao) return t.descricao
   return `${nomeJog(t.origem_id)} → ${nomeJog(t.destino_id)}`
 }

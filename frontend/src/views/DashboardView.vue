@@ -305,6 +305,20 @@ const nomeJog = (id) => {
 }
 
 const descricaoTransacao = (t) => {
+  if (t.tipo === 'negociacao') {
+    try {
+      const nd = JSON.parse(t.descricao || '{}')
+      const envia = []
+      if (nd.dinheiro_enviado > 0) envia.push(formatMoney(nd.dinheiro_enviado))
+      if (nd.propriedades_enviadas?.length) envia.push(`${nd.propriedades_enviadas.length} imóvel(is)`)
+      const recebe = []
+      if (nd.dinheiro_recebido > 0) recebe.push(formatMoney(nd.dinheiro_recebido))
+      if (nd.propriedades_recebidas?.length) recebe.push(`${nd.propriedades_recebidas.length} imóvel(is)`)
+      const oferta = envia.length ? envia.join(' + ') : '—'
+      const pedido = recebe.length ? recebe.join(' + ') : '—'
+      return `${nomeJog(t.origem_id)} negociou com ${nomeJog(t.destino_id)} · ${oferta} por ${pedido}`
+    } catch { return `${nomeJog(t.origem_id)} negociou com ${nomeJog(t.destino_id)}` }
+  }
   if (t.descricao) return t.descricao
   const tipos = {
     transferencia: `${nomeJog(t.origem_id)} → ${nomeJog(t.destino_id)} · ${formatMoney(t.valor)}`,
