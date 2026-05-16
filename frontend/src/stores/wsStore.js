@@ -4,7 +4,16 @@ import { usePartidaStore } from './partidaStore'
 import { useJogadorStore } from './jogadorStore'
 import router from '../router'
 
-const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
+function resolveWsBase() {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL
+  if (typeof window !== 'undefined') {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${window.location.host}`
+  }
+  return 'ws://localhost:8000'
+}
+
+const WS_BASE = resolveWsBase()
 
 export const useWsStore = defineStore('ws', () => {
   const connected = ref(false)
