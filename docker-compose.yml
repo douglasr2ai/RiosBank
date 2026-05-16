@@ -8,6 +8,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
+    networks:
+      - internal
 
   frontend:
     build: ./frontend
@@ -16,3 +18,11 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    networks:
+      - internal
+      - dokploy-network
+
+networks:
+  internal:
+  dokploy-network:
+    external: true
