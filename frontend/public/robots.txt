@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /jogo/
+Disallow: /lobby/
+Disallow: /espectador/
+Disallow: /historico/
+
+Sitemap: https://riosbank.r2pulse.com/sitemap.xml
