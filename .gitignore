@@ -1,6 +1,7 @@
 # Base de referência local
 backup/
 .claude/
+CLAUDE.md
 
 # Python
 __pycache__/
