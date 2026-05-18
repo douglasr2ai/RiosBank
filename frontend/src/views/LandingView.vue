@@ -5,6 +5,8 @@
       <div class="header-inner">
         <RouterLink :to="{ name: 'landing' }" class="brand">Rios<span>Bank</span></RouterLink>
         <nav class="header-nav">
+          <RouterLink :to="{ name: 'regras' }" class="nav-link">Regras</RouterLink>
+          <RouterLink :to="{ name: 'tutorial' }" class="nav-link">Tutorial</RouterLink>
           <RouterLink :to="{ name: 'historico-busca' }" class="nav-link">Histórico</RouterLink>
           <a
             href="https://github.com/douglasr2ai/RiosBank"
@@ -34,7 +36,7 @@
         <div class="hero-badge">Super Banco Imobiliário · Digital</div>
         <h1 class="hero-title">
           O banco digital do<br />
-          <span class="accent">Super Banco Imobiliário</span>
+          <span class="accent">Banco Imobiliário</span>
         </h1>
         <p class="hero-tagline">
           Chega de confusão com dinheiro de papel. Controle as finanças da sua partida
@@ -130,6 +132,34 @@
       </div>
     </section>
 
+    <!-- Como funciona o app -->
+    <section class="section section-alt" id="como-funciona-app">
+      <div class="container">
+        <p class="section-label">Como funciona o app</p>
+        <h2 class="section-title">Conheça as principais telas</h2>
+        <div class="telas">
+          <article class="tela-card">
+            <div class="tela-mock"><TutorialMockLobby :show-start="false" /></div>
+            <h3 class="tela-h">Lobby</h3>
+            <p class="tela-t">Compartilhe o link, espere os jogadores entrarem e inicie a partida quando todos estiverem online.</p>
+          </article>
+          <article class="tela-card">
+            <div class="tela-mock"><TutorialMockDashboard /></div>
+            <h3 class="tela-h">Dashboard</h3>
+            <p class="tela-t">Seu saldo, o saldo dos outros e botões para transferir, pagar aluguel, comprar imóvel e negociar.</p>
+          </article>
+          <article class="tela-card">
+            <div class="tela-mock"><TutorialMockAprovacao /></div>
+            <h3 class="tela-h">Aprovação coletiva</h3>
+            <p class="tela-t">Toda transação passa por voto. 10 segundos para aprovar ou reprovar — sem voto conta como aprovação.</p>
+          </article>
+        </div>
+        <div class="telas-cta">
+          <RouterLink :to="{ name: 'tutorial' }" class="telas-link">Ver tutorial completo →</RouterLink>
+        </div>
+      </div>
+    </section>
+
     <!-- FAQ -->
     <section class="section" id="faq">
       <div class="container container-narrow">
@@ -175,6 +205,8 @@
         <nav class="footer-nav">
           <RouterLink :to="{ name: 'entrar' }" class="footer-link">Jogar</RouterLink>
           <RouterLink :to="{ name: 'criar-sala' }" class="footer-link">Criar sala</RouterLink>
+          <RouterLink :to="{ name: 'regras' }" class="footer-link">Regras</RouterLink>
+          <RouterLink :to="{ name: 'tutorial' }" class="footer-link">Tutorial</RouterLink>
           <RouterLink :to="{ name: 'historico-busca' }" class="footer-link">Histórico</RouterLink>
         </nav>
         <span class="footer-copy">© 2026 RiosBank</span>
@@ -187,6 +219,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { api } from '../stores/api'
+import TutorialMockLobby from '../components/tutorial/TutorialMockLobby.vue'
+import TutorialMockDashboard from '../components/tutorial/TutorialMockDashboard.vue'
+import TutorialMockAprovacao from '../components/tutorial/TutorialMockAprovacao.vue'
 
 const headerHidden = ref(false)
 const openFaq = ref(null)
@@ -271,6 +306,18 @@ const faqs = [
   {
     question: 'Como acesso o histórico depois que a partida terminar?',
     answer: 'O link de convite da sala dá acesso ao resumo completo da partida após o encerramento, com ranking final, saldos e estatísticas de transações. Guarde o link ou a senha da sala.',
+  },
+  {
+    question: 'O RiosBank funciona offline?',
+    answer: 'Não. O RiosBank precisa de conexão à internet porque sincroniza saldos, aprovações e leilões em tempo real entre os celulares dos jogadores. A partida é presencial, mas o banco é online.',
+  },
+  {
+    question: 'Posso jogar Banco Imobiliário online sem o tabuleiro?',
+    answer: 'O RiosBank substitui apenas o banco e o dinheiro de papel. O tabuleiro físico, os dados e as peças continuam sendo usados normalmente. É um complemento para a partida presencial, não um jogo online completo.',
+  },
+  {
+    question: 'O RiosBank é gratuito?',
+    answer: 'Sim. O RiosBank é totalmente gratuito e de código aberto. Não há anúncios, não há compras dentro do app e não é necessário criar conta.',
   },
 ]
 </script>
@@ -507,6 +554,30 @@ const faqs = [
 .fi-purple{ background: rgba(156,39,176,.15);  color: #CE93D8; }
 .feature-title { font-size: 17px; font-weight: 700; }
 .feature-text  { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+
+/* ── Telas (seção "Como funciona o app") ─────────────────── */
+.telas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.tela-card {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.tela-mock { max-width: 320px; width: 100%; align-self: center; }
+.tela-h { font-size: 16px; font-weight: 700; text-align: center; }
+.tela-t {
+  font-size: 13px; color: var(--text-2);
+  line-height: 1.55;
+  text-align: center;
+}
+.telas-cta { text-align: center; margin-top: 28px; }
+.telas-link {
+  font-size: 14px; font-weight: 700;
+  color: var(--green);
+  text-decoration: none;
+}
+.telas-link:hover { text-decoration: underline; }
 
 /* ── FAQ ─────────────────────────────────────────────────── */
 .faq-list { display: flex; flex-direction: column; gap: 8px; }
